@@ -128,6 +128,7 @@ fi
 # ----------------------------------------------------
 echo "[8] 코드 배포..."
 mkdir -p "$REPO_DIR"
+git config --global --add safe.directory "$REPO_DIR"
 
 if [ -d "$REPO_DIR/.git" ]; then
   echo "  git pull..."

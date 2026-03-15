@@ -80,7 +80,8 @@ function QuizPage() {
       setCountries(quiz.countries);
       setPhase('quiz');
       start();
-    } catch {
+    } catch (e) {
+      console.error('[loadQuiz] 에러:', e);
       setErrorMsg('문제를 불러오지 못했어요.');
       setPhase('error');
     }
@@ -97,7 +98,8 @@ function QuizPage() {
       setAnswer(result);
       if (result.isCorrect) setStreak(result.streak.current);
       setPhase(result.isCorrect ? 'correct' : 'wrong');
-    } catch {
+    } catch (e) {
+      console.error('[submitAnswer] 에러:', e);
       setErrorMsg('정답 제출 중 오류가 발생했어요.');
       setPhase('error');
     }

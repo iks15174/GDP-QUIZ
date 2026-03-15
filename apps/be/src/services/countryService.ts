@@ -127,7 +127,7 @@ export async function getTwoRandomCountries() {
   }
 
   const countries = await prisma.$queryRaw<{ code: string }[]>`
-    SELECT code FROM Country ORDER BY RANDOM() LIMIT 2
+    SELECT code FROM "Country" ORDER BY RANDOM() LIMIT 2
   `;
 
   if (countries.length < 2) return null;
