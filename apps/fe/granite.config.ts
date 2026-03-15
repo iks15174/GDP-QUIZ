@@ -7,7 +7,6 @@ const monorepoRoot = path.resolve(__dirname, '../..');
 export default defineConfig({
   appName: 'gdp-economy-quiz',
   scheme: 'intoss',
-  entryFile: './_app.tsx',
   metro: {
     watchFolders: [monorepoRoot],
     resolver: {
