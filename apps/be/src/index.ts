@@ -10,22 +10,9 @@ const server = Fastify({ logger: true });
 const isProd = process.env.NODE_ENV === 'production';
 const appName = process.env.APP_NAME ?? 'gdp-economy-quiz';
 
-const allowedOrigins = [
-  `https://${appName}.apps.tossmini.com`,
-  `https://${appName}.private-apps.tossmini.com`,
-];
-
 await server.register(cors, {
-  origin: isProd
-    ? (origin, cb) => {
-        server.log.info({ origin }, 'CORS origin check');
-        if (!origin || allowedOrigins.includes(origin)) {
-          cb(null, true);
-        } else {
-          cb(null, false);
-        }
-      }
-    : true,
+  // TODO: Origin 확인 후 특정 도메인으로 교체
+  origin: true,
 });
 
 // DB 플러그인
