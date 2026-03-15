@@ -164,6 +164,7 @@ echo "[9] .env 생성..."
 cat > "$APP_DIR/.env" <<ENV
 NODE_ENV=production
 PORT=4000
+TZ=Asia/Seoul
 APP_NAME=$APP_NAME
 DATABASE_URL=postgresql://gdpuser:$DB_PASSWORD@localhost:5432/gdpworldcup
 PUBLIC_DATA_API_KEY=$API_KEY
