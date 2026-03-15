@@ -1,0 +1,81 @@
+import config from '../config';
+
+const BASE_URL = config.apiBaseUrl;
+
+export interface QuizCountry {
+  code: string;
+  nameKo: string;
+  nameEn: string;
+  flagEmoji: string;
+}
+
+export interface QuizResponse {
+  quizId: string;
+  countries: [QuizCountry, QuizCountry];
+}
+
+export interface AnswerCountry {
+  code: string;
+  nameKo: string;
+  nameEn: string;
+  flagEmoji: string;
+  gdpPerCapita: number;
+  mainIndustries: string[];
+  isCorrect: boolean;
+  gdpRank: number;
+  totalCountries: number;
+  continent: string | null;
+  mainResource: string | null;
+}
+
+export interface AnswerResponse {
+  isCorrect: boolean;
+  correctCode: string;
+  rewardEarned: boolean;
+  streak: { current: number; totalWins: number };
+  countries: [AnswerCountry, AnswerCountry];
+}
+
+export interface EncyclopediaCountry {
+  code: string;
+  nameKo: string;
+  nameEn: string;
+  flagEmoji: string;
+  gdpPerCapita: number;
+  mainIndustries: string[];
+  viewedAt: string;
+  continent: string | null;
+  mainResource: string | null;
+}
+
+async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    headers: { 'Content-Type': 'application/json' },
+    ...options,
+  });
+  if (!res.ok) {
+    throw new Error(`API 오류: ${res.status}`);
+  }
+  return res.json() as Promise<T>;
+}
+
+export const api = {
+  getQuiz: (userId: string) =>
+    request<QuizResponse>(`/api/quiz?userId=${encodeURIComponent(userId)}`),
+
+  submitAnswer: (body: { quizId: string; userId: string; selectedCode: string }) =>
+    request<AnswerResponse>('/api/quiz/answer', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  getStreak: (userId: string) =>
+    request<{ streak: number; totalWins: number }>(
+      `/api/quiz/streak?userId=${encodeURIComponent(userId)}`
+    ),
+
+  getEncyclopedia: (userId: string) =>
+    request<{ countries: EncyclopediaCountry[]; totalCountries: number }>(
+      `/api/encyclopedia?userId=${encodeURIComponent(userId)}`
+    ),
+};

@@ -1,0 +1,17 @@
+{
+  "name": "gdp-worldcup",
+  "private": true,
+  "workspaces": [
+    "apps/fe",
+    "apps/be"
+  ],
+  "scripts": {
+    "dev:fe": "npm run dev --workspace=apps/fe",
+    "dev:be": "npm run dev --workspace=apps/be",
+    "build:fe": "npm run build --workspace=apps/fe",
+    "build:be": "npm run build --workspace=apps/be"
+  },
+  "dependencies": {
+    "brick-module": "^0.5.0"
+  }
+}

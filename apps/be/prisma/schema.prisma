@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = ["sqlite", "postgresql"]
+  url      = env("DATABASE_URL")
+}
+
+// 국가 정보 (7일 캐시)
+model Country {
+  id            String   @id @default(cuid())
+  code          String   @unique // ISO 3166-1 alpha-3 (e.g. "KOR")
+  nameKo        String   // 한국어 이름
+  nameEn        String   // 영어 이름
+  flagEmoji     String   // 국기 이모지
+  gdpPerCapita  Float    // 1인당 GDP (USD)
+  mainIndustries String  // 주요 산업 (JSON 배열 문자열)
+  continent     String?  // 대륙 (아시아, 유럽 등)
+  mainResource  String?  // 주요 자원
+  cachedAt      DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  quizSessions  QuizSession[] @relation("Country1")
+  quizSessions2 QuizSession[] @relation("Country2")
+  viewedByUsers UserCountryView[]
+}
+
+// 퀴즈 세션 (문제 하나)
+model QuizSession {
+  id              String   @id @default(cuid())
+  userId          String   // 클라이언트 세션 ID
+  country1Code    String
+  country2Code    String
+  correctCode     String   // GDP 높은 나라
+  answeredCode    String?  // 유저가 선택한 나라
+  isCorrect       Boolean?
+  createdAt       DateTime @default(now())
+  answeredAt      DateTime?
+
+  country1        Country  @relation("Country1", fields: [country1Code], references: [code])
+  country2        Country  @relation("Country2", fields: [country2Code], references: [code])
+}
+
+// 유저 연속 정답 streak
+model UserStreak {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  streak      Int      @default(0) // 현재 연속 정답 수 (0~3)
+  totalWins   Int      @default(0) // 누적 1원 수령 횟수
+  updatedAt   DateTime @updatedAt
+}
+
+// 유저가 학습한 국가 기록 (백과사전 페이지용)
+model UserCountryView {
+  id          String   @id @default(cuid())
+  userId      String
+  countryCode String
+  viewedAt    DateTime @default(now())
+
+  country     Country  @relation(fields: [countryCode], references: [code])
+
+  @@unique([userId, countryCode])
+}
