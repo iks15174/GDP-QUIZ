@@ -201,11 +201,46 @@ if [ -z "$PUBLIC_IP" ]; then
 else
 echo "[13] HTTPS 설정 ($DOMAIN)..."
 
-# nginx 리버스 프록시 설정
+# SSL 인증서 발급 (certbot은 cert 발급만 담당, nginx 설정은 직접 작성)
+if [ ! -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ]; then
+  echo "  Let's Encrypt 인증서 발급 중..."
+
+  # certbot standalone으로 cert만 발급 (nginx 설정 수정 안 함)
+  # 먼저 HTTP 블록만 있는 임시 설정으로 80 포트 열기
+  cat > /etc/nginx/sites-available/gdp-api <<NGINX_TMP
+server {
+    listen 80;
+    server_name $DOMAIN;
+    location / { return 200 'ok'; }
+}
+NGINX_TMP
+  ln -sf /etc/nginx/sites-available/gdp-api /etc/nginx/sites-enabled/gdp-api
+  rm -f /etc/nginx/sites-enabled/default
+  nginx -t && systemctl reload nginx
+
+  rm -rf /etc/letsencrypt
+  certbot certonly --nginx -d "$DOMAIN" --non-interactive --agree-tos --register-unsafely-without-email
+else
+  echo "  SSL 인증서 이미 존재, 갱신 확인..."
+  certbot renew --quiet
+fi
+
+# nginx HTTPS 설정 직접 작성 (cert 발급 후)
 cat > /etc/nginx/sites-available/gdp-api <<NGINX
 server {
     listen 80;
     server_name $DOMAIN;
+    return 301 https://\$host\$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name $DOMAIN;
+
+    ssl_certificate /etc/letsencrypt/live/$DOMAIN/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
     location / {
         proxy_pass http://localhost:4000;
@@ -220,18 +255,6 @@ NGINX
 ln -sf /etc/nginx/sites-available/gdp-api /etc/nginx/sites-enabled/gdp-api
 rm -f /etc/nginx/sites-enabled/default
 nginx -t && systemctl reload nginx
-
-# SSL 인증서 발급 (최초 1회만)
-if [ ! -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ]; then
-  echo "  Let's Encrypt 인증서 발급 중..."
-  rm -rf /etc/letsencrypt
-  certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --register-unsafely-without-email
-else
-  echo "  SSL 인증서 이미 존재, 갱신 확인..."
-  certbot renew --quiet
-fi
-
-systemctl reload nginx
 echo "HTTPS 준비 완료: https://$DOMAIN"
 fi  # PUBLIC_IP 가드 끝
 
