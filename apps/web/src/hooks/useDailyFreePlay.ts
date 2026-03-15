@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
 
-// 앱 세션 내 유지 (미니앱 특성상 세션 중에 리셋되지 않음)
-let _freePlayDate: string | null = null;
+const FREE_PLAY_KEY = 'gdp_free_play_date';
 
 function today(): string {
   const d = new Date();
@@ -9,12 +8,14 @@ function today(): string {
 }
 
 export function useDailyFreePlay() {
-  const [usedToday, setUsedToday] = useState(() => _freePlayDate === today());
+  const [usedToday, setUsedToday] = useState(() => {
+    return localStorage.getItem(FREE_PLAY_KEY) === today();
+  });
 
   const canFreePlay = !usedToday;
 
   const consumeFreePlay = useCallback(() => {
-    _freePlayDate = today();
+    localStorage.setItem(FREE_PLAY_KEY, today());
     setUsedToday(true);
   }, []);
 

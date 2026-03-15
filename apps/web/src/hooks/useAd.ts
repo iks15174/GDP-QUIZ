@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { loadFullScreenAd, showFullScreenAd } from '@apps-in-toss/framework';
+import { loadFullScreenAd, showFullScreenAd } from '@apps-in-toss/web-framework';
 import config from '../config';
 
 const AD_GROUP_ID = config.adGroupId;
@@ -24,7 +24,6 @@ export function useAd() {
     unregisterRef.current = unregister;
   };
 
-  // 컴포넌트 마운트 시 미리 로드
   useEffect(() => {
     loadAd();
     return () => unregisterRef.current?.();
@@ -32,7 +31,6 @@ export function useAd() {
 
   const showAd = (onWatched: () => void, onDismissed: () => void) => {
     if (!showFullScreenAd.isSupported() || !isAdLoaded) {
-      // 광고 미지원 환경에서는 바로 계속하기
       onWatched();
       return;
     }
@@ -45,7 +43,7 @@ export function useAd() {
         }
         if (event.type === 'dismissed') {
           setIsAdLoaded(false);
-          loadAd(); // 다음 광고 미리 로드
+          loadAd();
           onDismissed();
         }
       },

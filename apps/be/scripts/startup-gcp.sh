@@ -8,6 +8,7 @@
 #   api-key           : 공공데이터 API 키
 #   app-name          : 앱인토스 앱 이름 (예: gdp-economy-quiz)
 #   git-repo          : git clone URL (예: https://github.com/yourname/gdp-worldcup)
+#   admin-email       : Let's Encrypt 인증서 발급용 이메일 (예: admin@example.com)
 # =============================================================
 
 set -e
@@ -29,6 +30,11 @@ DB_PASSWORD=$(curl -sf -H "$H" "$META/db-password")
 API_KEY=$(curl -sf -H "$H" "$META/api-key")
 APP_NAME=$(curl -sf -H "$H" "$META/app-name" || echo "gdp-economy-quiz")
 GIT_REPO=$(curl -sf -H "$H" "$META/git-repo")
+ADMIN_EMAIL=$(curl -sf -H "$H" "$META/admin-email" || echo "admin@example.com")
+
+# 공인 IP → nip.io 도메인 계산
+PUBLIC_IP=$(curl -sf -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/externalIp" || curl -sf "https://api.ipify.org" || echo "")
+DOMAIN="${PUBLIC_IP//./-}.nip.io"
 
 # 필수 메타데이터 검증
 if [ -z "$DB_PASSWORD" ]; then
@@ -67,7 +73,17 @@ fi
 echo "git: $(git --version)"
 
 # ----------------------------------------------------
-# 3. Node.js 20 설치
+# 3. nginx + certbot 설치
+# ----------------------------------------------------
+if ! command -v nginx &>/dev/null; then
+  echo "[3] nginx + certbot 설치..."
+  apt-get install -y nginx certbot python3-certbot-nginx
+  systemctl enable nginx
+fi
+echo "nginx: $(nginx -v 2>&1)"
+
+# ----------------------------------------------------
+# 4. Node.js 20 설치
 # ----------------------------------------------------
 if ! command -v node &>/dev/null || [[ "$(node -v)" != v20* ]]; then
   echo "[3] Node.js 20 설치..."
@@ -77,7 +93,7 @@ fi
 echo "Node.js: $(node -v)"
 
 # ----------------------------------------------------
-# 4. pm2 설치
+# 5. pm2 설치
 # ----------------------------------------------------
 if ! command -v pm2 &>/dev/null; then
   echo "[4] pm2 설치..."
@@ -86,7 +102,7 @@ fi
 echo "pm2: $(pm2 -v)"
 
 # ----------------------------------------------------
-# 5. PostgreSQL 설치
+# 6. PostgreSQL 설치
 # ----------------------------------------------------
 if ! command -v psql &>/dev/null; then
   echo "[5] PostgreSQL 설치..."
@@ -97,7 +113,7 @@ systemctl start postgresql
 echo "PostgreSQL: 실행 중"
 
 # ----------------------------------------------------
-# 6. DB & 유저 생성 (멱등성 보장)
+# 7. DB & 유저 생성 (멱등성 보장)
 # ----------------------------------------------------
 echo "[6] DB 설정..."
 sudo -u postgres psql -q <<SQL
@@ -116,7 +132,7 @@ GRANT ALL PRIVILEGES ON DATABASE gdpworldcup TO gdpuser;
 SQL
 
 # ----------------------------------------------------
-# 7. 앱 유저 생성
+# 8. 앱 유저 생성
 # ----------------------------------------------------
 if ! id "$APP_USER" &>/dev/null; then
   echo "[7] 앱 유저 생성..."
@@ -124,7 +140,7 @@ if ! id "$APP_USER" &>/dev/null; then
 fi
 
 # ----------------------------------------------------
-# 8. 코드 배포 (최초: clone, 이후: pull)
+# 9. 코드 배포 (최초: clone, 이후: pull)
 # ----------------------------------------------------
 echo "[8] 코드 배포..."
 mkdir -p "$REPO_DIR"
@@ -141,7 +157,7 @@ fi
 chown -R "$APP_USER":"$APP_USER" "$REPO_DIR"
 
 # ----------------------------------------------------
-# 9. .env 생성
+# 10. .env 생성
 # ----------------------------------------------------
 echo "[9] .env 생성..."
 cat > "$APP_DIR/.env" <<ENV
@@ -157,7 +173,7 @@ chown "$APP_USER":"$APP_USER" "$APP_DIR/.env"
 chmod 600 "$APP_DIR/.env"
 
 # ----------------------------------------------------
-# 10. 패키지 설치 & 빌드
+# 11. 패키지 설치 & 빌드
 # ----------------------------------------------------
 echo "[10] 패키지 설치 & 빌드..."
 cd "$APP_DIR"
@@ -167,7 +183,7 @@ sudo -u "$APP_USER" npx prisma db push --accept-data-loss
 sudo -u "$APP_USER" npm run build
 
 # ----------------------------------------------------
-# 11. pm2 실행
+# 12. pm2 실행
 # ----------------------------------------------------
 echo "[11] pm2 시작..."
 pm2 delete gdp-worldcup-be 2>/dev/null || true
@@ -177,11 +193,53 @@ env PATH="$PATH:/usr/bin" pm2 startup systemd -u root --hp /root
 systemctl enable pm2-root
 
 # ----------------------------------------------------
+# 13. nginx HTTPS 설정 (nip.io + Let's Encrypt)
+# ----------------------------------------------------
+if [ -z "$PUBLIC_IP" ]; then
+  echo "[13] 공인 IP를 가져올 수 없어 HTTPS 설정 건너뜀"
+else
+echo "[13] HTTPS 설정 ($DOMAIN)..."
+
+# nginx 리버스 프록시 설정
+cat > /etc/nginx/sites-available/gdp-api <<NGINX
+server {
+    listen 80;
+    server_name $DOMAIN;
+
+    location / {
+        proxy_pass http://localhost:4000;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
+NGINX
+
+ln -sf /etc/nginx/sites-available/gdp-api /etc/nginx/sites-enabled/gdp-api
+rm -f /etc/nginx/sites-enabled/default
+nginx -t && systemctl reload nginx
+
+# SSL 인증서 발급 (최초 1회만)
+if [ ! -f "/etc/letsencrypt/live/$DOMAIN/fullchain.pem" ]; then
+  echo "  Let's Encrypt 인증서 발급 중..."
+  rm -rf /etc/letsencrypt
+  certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos --register-unsafely-without-email
+else
+  echo "  SSL 인증서 이미 존재, 갱신 확인..."
+  certbot renew --quiet
+fi
+
+systemctl reload nginx
+echo "HTTPS 준비 완료: https://$DOMAIN"
+fi  # PUBLIC_IP 가드 끝
+
+# ----------------------------------------------------
 # 완료 마킹
 # ----------------------------------------------------
 touch /var/gdp-setup-done
 
 echo "========================================"
 echo "스타트업 완료: $(date)"
-echo "헬스 체크: curl http://localhost:4000/health"
+echo "헬스 체크: curl https://$DOMAIN/health"
 echo "========================================"
