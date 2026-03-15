@@ -148,7 +148,8 @@ git config --global --add safe.directory "$REPO_DIR"
 
 if [ -d "$REPO_DIR/.git" ]; then
   echo "  git pull..."
-  git -C "$REPO_DIR" pull --ff-only
+  git -C "$REPO_DIR" fetch origin
+  git -C "$REPO_DIR" reset --hard origin/master
 else
   echo "  git clone..."
   git clone "$GIT_REPO" "$REPO_DIR"
