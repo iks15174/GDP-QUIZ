@@ -8,7 +8,7 @@ import { encyclopediaRoutes } from './routes/encyclopedia.js';
 const server = Fastify({ logger: true });
 
 const isProd = process.env.NODE_ENV === 'production';
-const appName = process.env.APP_NAME ?? 'gdp-worldcup';
+const appName = process.env.APP_NAME ?? 'gdp-economy-quiz';
 
 await server.register(cors, {
   origin: isProd

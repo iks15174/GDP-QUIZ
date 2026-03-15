@@ -9,9 +9,7 @@ const config = {
     ? 'http://localhost:4000'
     : 'http://34.173.234.88:4000',
 
-  adGroupId: __DEV__
-    ? 'ait.dev.43daa14da3ae487b'   // 테스트 광고 ID
-    : 'ait.prod.REPLACE_ME',        // 운영 광고 ID (앱인토스 콘솔에서 발급)
+  adGroupId: 'ait.dev.43daa14da3ae487b', // TODO: 운영 광고 ID 발급 후 교체
 } as const;
 
 export default config;
