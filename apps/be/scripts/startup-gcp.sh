@@ -44,7 +44,16 @@ if [ ! -f /var/gdp-setup-done ]; then
 fi
 
 # ----------------------------------------------------
-# 2. Node.js 20 설치
+# 2. git 설치
+# ----------------------------------------------------
+if ! command -v git &>/dev/null; then
+  echo "[2] git 설치..."
+  apt-get install -y git
+fi
+echo "git: $(git --version)"
+
+# ----------------------------------------------------
+# 3. Node.js 20 설치 (번호 밀림)
 # ----------------------------------------------------
 if ! command -v node &>/dev/null || [[ "$(node -v)" != v20* ]]; then
   echo "[2] Node.js 20 설치..."
