@@ -73,7 +73,7 @@ export default function IndexPage() {
             disabled={loginLoading}
             style={{ width: '100%', backgroundColor: '#2563EB', paddingTop: 17, paddingBottom: 17, borderRadius: 14, fontSize: 17, fontWeight: 700, color: '#FFFFFF', letterSpacing: -0.3, opacity: loginLoading ? 0.6 : 1 }}
           >
-            {loginLoading ? '로그인 중...' : '토스로 시작하기'}
+            {loginLoading ? '로그인 중...' : '로그인하기'}
           </button>
         ) : (
           <>
