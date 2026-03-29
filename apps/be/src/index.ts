@@ -9,11 +9,7 @@ import { unlinkRoutes } from './routes/unlink.js';
 
 const server = Fastify({ logger: true });
 
-const isProd = process.env.NODE_ENV === 'production';
-const appName = process.env.APP_NAME ?? 'gdp-economy-quiz';
-
 await server.register(cors, {
-  // TODO: Origin 확인 후 특정 도메인으로 교체
   origin: true,
 });
 
@@ -33,4 +29,3 @@ server.get('/health', async () => ({ status: 'ok' }));
 
 const port = Number(process.env.PORT ?? 4000);
 await server.listen({ port, host: '0.0.0.0' });
-console.log(`Server running on http://localhost:${port}`);
