@@ -13,8 +13,8 @@ export const unlinkRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.status(401).send({ error: 'Unauthorized' });
     }
 
-    const body = request.body as { userKey?: string };
-    const userKey = body?.userKey;
+    const body = request.body as { userKey?: string | number };
+    const userKey = body?.userKey != null ? String(body.userKey) : undefined;
 
     if (!userKey) {
       return reply.status(400).send({ error: 'userKey가 필요합니다.' });
