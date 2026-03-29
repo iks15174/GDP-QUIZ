@@ -63,6 +63,7 @@ export async function getLoginMe(accessToken: string): Promise<{ userKey: string
     throw new Error(`사용자 정보 조회 실패: ${response.status} ${text}`);
   }
 
-  const data = (await response.json()) as { userKey: string };
-  return { userKey: data.userKey };
+  const data = await response.json();
+  console.log('[tossLoginService] login-me 응답:', JSON.stringify(data));
+  return { userKey: (data as any).userKey };
 }
