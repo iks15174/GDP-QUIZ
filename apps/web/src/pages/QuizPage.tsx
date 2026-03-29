@@ -5,7 +5,7 @@ import { Timer } from '../components/Timer';
 import { StreakBar } from '../components/StreakBar';
 import { api, QuizCountry, AnswerResponse } from '../services/api';
 import { useTimer } from '../hooks/useTimer';
-import { useUserId } from '../hooks/useUserId';
+import { useAuth } from '../hooks/useAuth';
 import { useAd } from '../hooks/useAd';
 
 const QUIZ_SECONDS = 5;
@@ -26,7 +26,7 @@ function formatKRW(gdp: number): string {
 
 export default function QuizPage() {
   const navigate = useNavigate();
-  const userId = useUserId();
+  const { userKey: userId } = useAuth();
   const { showAd } = useAd();
 
   const [phase, setPhase] = useState<Phase>('loading');

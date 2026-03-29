@@ -9,6 +9,14 @@
 #   app-name          : 앱인토스 앱 이름 (예: gdp-economy-quiz)
 #   git-repo          : git clone URL (예: https://github.com/yourname/gdp-worldcup)
 #   admin-email       : Let's Encrypt 인증서 발급용 이메일 (예: admin@example.com)
+#   ait-decrypt-key   : 앱인토스 사용자 정보 복호화 키 (이메일 수령)
+#   ait-decrypt-aad   : 앱인토스 복호화 AAD (이메일 수령)
+#   ait-mtls-cert-b64 : mTLS 공개 인증서 base64 인코딩값 (gdp-quiz-login_public.crt)
+#   ait-mtls-key-b64  : mTLS 개인 키 base64 인코딩값 (gdp-quiz-login_private.key)
+#
+# 인증서 base64 인코딩 방법 (로컬에서 실행):
+#   base64 -w 0 gdp-quiz-login_public.crt
+#   base64 -w 0 gdp-quiz-login_private.key
 # =============================================================
 
 set -e
@@ -31,6 +39,10 @@ API_KEY=$(curl -sf -H "$H" "$META/api-key")
 APP_NAME=$(curl -sf -H "$H" "$META/app-name" || echo "gdp-economy-quiz")
 GIT_REPO=$(curl -sf -H "$H" "$META/git-repo")
 ADMIN_EMAIL=$(curl -sf -H "$H" "$META/admin-email" || echo "admin@example.com")
+AIT_DECRYPT_KEY=$(curl -sf -H "$H" "$META/ait-decrypt-key" || echo "")
+AIT_DECRYPT_AAD=$(curl -sf -H "$H" "$META/ait-decrypt-aad" || echo "")
+AIT_MTLS_CERT_B64=$(curl -sf -H "$H" "$META/ait-mtls-cert-b64" || echo "")
+AIT_MTLS_KEY_B64=$(curl -sf -H "$H" "$META/ait-mtls-key-b64" || echo "")
 
 # 공인 IP → nip.io 도메인 계산
 PUBLIC_IP=$(curl -sf -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/externalIp" || curl -sf "https://api.ipify.org" || echo "")
@@ -158,6 +170,26 @@ fi
 chown -R "$APP_USER":"$APP_USER" "$REPO_DIR"
 
 # ----------------------------------------------------
+# 9-1. mTLS 인증서 복원
+# ----------------------------------------------------
+echo "[9-1] mTLS 인증서 복원..."
+mkdir -p "$APP_DIR/certs"
+if [ -n "$AIT_MTLS_CERT_B64" ]; then
+  echo "$AIT_MTLS_CERT_B64" | base64 -d > "$APP_DIR/certs/gdp-quiz-login_public.crt"
+  echo "  공개 인증서 복원 완료"
+else
+  echo "  WARNING: ait-mtls-cert-b64 메타데이터가 없습니다."
+fi
+if [ -n "$AIT_MTLS_KEY_B64" ]; then
+  echo "$AIT_MTLS_KEY_B64" | base64 -d > "$APP_DIR/certs/gdp-quiz-login_private.key"
+  echo "  개인 키 복원 완료"
+else
+  echo "  WARNING: ait-mtls-key-b64 메타데이터가 없습니다."
+fi
+chmod 600 "$APP_DIR/certs/"*
+chown -R "$APP_USER":"$APP_USER" "$APP_DIR/certs"
+
+# ----------------------------------------------------
 # 10. .env 생성
 # ----------------------------------------------------
 echo "[9] .env 생성..."
@@ -170,6 +202,10 @@ DATABASE_URL=postgresql://gdpuser:$DB_PASSWORD@localhost:5432/gdpworldcup
 PUBLIC_DATA_API_KEY=$API_KEY
 PUBLIC_DATA_API_BASE_URL=http://apis.data.go.kr/1262000/OverviewEconomicService/OverviewEconomicList
 COUNTRY_CACHE_TTL_SECONDS=604800
+AIT_DECRYPT_KEY=$AIT_DECRYPT_KEY
+AIT_DECRYPT_AAD=$AIT_DECRYPT_AAD
+AIT_MTLS_CERT_PATH=./certs/gdp-quiz-login_public.crt
+AIT_MTLS_KEY_PATH=./certs/gdp-quiz-login_private.key
 ENV
 chown "$APP_USER":"$APP_USER" "$APP_DIR/.env"
 chmod 600 "$APP_DIR/.env"

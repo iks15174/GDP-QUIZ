@@ -1,12 +1,24 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAd } from '../hooks/useAd';
 import { useDailyFreePlay } from '../hooks/useDailyFreePlay';
+import { useAuth } from '../hooks/useAuth';
 
 export default function IndexPage() {
   const navigate = useNavigate();
   const { showAd } = useAd();
   const { canFreePlay, consumeFreePlay } = useDailyFreePlay();
+  const { isLoggedIn, login } = useAuth();
+  const [loginLoading, setLoginLoading] = useState(false);
+
+  const handleLogin = async () => {
+    setLoginLoading(true);
+    try {
+      await login();
+    } finally {
+      setLoginLoading(false);
+    }
+  };
 
   const handleStartQuiz = () => {
     if (canFreePlay) {
@@ -55,21 +67,33 @@ export default function IndexPage() {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
-        <button
-          onClick={handleStartQuiz}
-          style={{ width: '100%', backgroundColor: '#2563EB', paddingTop: 17, paddingBottom: 17, borderRadius: 14, fontSize: 17, fontWeight: 700, color: '#FFFFFF', letterSpacing: -0.3 }}
-        >
-          퀴즈 시작하기
-        </button>
-        {canFreePlay && (
-          <span style={{ fontSize: 13, color: '#059669', fontWeight: 600 }}>오늘 첫 도전은 무료예요</span>
+        {!isLoggedIn ? (
+          <button
+            onClick={handleLogin}
+            disabled={loginLoading}
+            style={{ width: '100%', backgroundColor: '#2563EB', paddingTop: 17, paddingBottom: 17, borderRadius: 14, fontSize: 17, fontWeight: 700, color: '#FFFFFF', letterSpacing: -0.3, opacity: loginLoading ? 0.6 : 1 }}
+          >
+            {loginLoading ? '로그인 중...' : '토스로 시작하기'}
+          </button>
+        ) : (
+          <>
+            <button
+              onClick={handleStartQuiz}
+              style={{ width: '100%', backgroundColor: '#2563EB', paddingTop: 17, paddingBottom: 17, borderRadius: 14, fontSize: 17, fontWeight: 700, color: '#FFFFFF', letterSpacing: -0.3 }}
+            >
+              퀴즈 시작하기
+            </button>
+            {canFreePlay && (
+              <span style={{ fontSize: 13, color: '#059669', fontWeight: 600 }}>오늘 첫 도전은 무료예요</span>
+            )}
+            <button
+              onClick={() => navigate('/encyclopedia')}
+              style={{ width: '100%', paddingTop: 15, paddingBottom: 15, borderRadius: 14, fontSize: 15, fontWeight: 600, color: '#4B5563', border: '1px solid #E5E7EB', backgroundColor: '#FFFFFF' }}
+            >
+              내 학습 기록 보기
+            </button>
+          </>
         )}
-        <button
-          onClick={() => navigate('/encyclopedia')}
-          style={{ width: '100%', paddingTop: 15, paddingBottom: 15, borderRadius: 14, fontSize: 15, fontWeight: 600, color: '#4B5563', border: '1px solid #E5E7EB', backgroundColor: '#FFFFFF' }}
-        >
-          내 학습 기록 보기
-        </button>
       </div>
 
     </div>
