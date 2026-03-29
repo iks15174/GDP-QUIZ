@@ -5,6 +5,7 @@ import { quizRoutes } from './routes/quiz.js';
 import { countriesRoutes } from './routes/countries.js';
 import { encyclopediaRoutes } from './routes/encyclopedia.js';
 import { authRoutes } from './routes/auth.js';
+import { unlinkRoutes } from './routes/unlink.js';
 
 const server = Fastify({ logger: true });
 
@@ -23,6 +24,7 @@ server.addHook('onClose', async () => {
 
 // 라우트 등록
 await server.register(authRoutes, { prefix: '/api/auth' });
+await server.register(unlinkRoutes, { prefix: '/api/auth' });
 await server.register(quizRoutes, { prefix: '/api/quiz' });
 await server.register(countriesRoutes, { prefix: '/api/countries' });
 await server.register(encyclopediaRoutes, { prefix: '/api/encyclopedia' });

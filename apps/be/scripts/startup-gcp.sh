@@ -42,6 +42,7 @@ ADMIN_EMAIL=$(curl -sf -H "$H" "$META/admin-email" || echo "admin@example.com")
 AIT_DECRYPT_KEY=$(curl -sf -H "$H" "$META/ait-decrypt-key" || echo "")
 AIT_DECRYPT_AAD=$(curl -sf -H "$H" "$META/ait-decrypt-aad" || echo "")
 AIT_MTLS_CERT_B64=$(curl -sf -H "$H" "$META/ait-mtls-cert-b64" || echo "")
+AIT_UNLINK_SECRET=$(curl -sf -H "$H" "$META/ait-unlink-secret" || echo "")
 AIT_MTLS_KEY_B64=$(curl -sf -H "$H" "$META/ait-mtls-key-b64" || echo "")
 
 # 공인 IP → nip.io 도메인 계산
@@ -204,6 +205,7 @@ PUBLIC_DATA_API_BASE_URL=http://apis.data.go.kr/1262000/OverviewEconomicService/
 COUNTRY_CACHE_TTL_SECONDS=604800
 AIT_DECRYPT_KEY=$AIT_DECRYPT_KEY
 AIT_DECRYPT_AAD=$AIT_DECRYPT_AAD
+AIT_UNLINK_SECRET=$AIT_UNLINK_SECRET
 AIT_MTLS_CERT_PATH=./certs/gdp-quiz-login_public.crt
 AIT_MTLS_KEY_PATH=./certs/gdp-quiz-login_private.key
 ENV
