@@ -50,7 +50,7 @@ export default function QuizPage() {
       setSelectedCode(null);
       setAnswer(null);
       setShowRateInfo(false);
-      const quiz = await api.getQuiz(userId);
+      const quiz = await api.getQuiz(userId!);
       setQuizId(quiz.quizId);
       setCountries(quiz.countries);
       setPhase('quiz');
@@ -69,7 +69,7 @@ export default function QuizPage() {
     setPhase('submitting');
 
     try {
-      const result = await api.submitAnswer({ quizId, userId, selectedCode: code });
+      const result = await api.submitAnswer({ quizId, userId: userId!, selectedCode: code });
       setAnswer(result);
       if (result.isCorrect) setStreak(result.streak.current);
       setPhase(result.isCorrect ? 'correct' : 'wrong');
