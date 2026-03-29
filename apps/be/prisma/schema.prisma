@@ -26,6 +26,13 @@ model Country {
   viewedByUsers UserCountryView[]
 }
 
+// 토스 로그인 유저
+model User {
+  id        String   @id @default(cuid())
+  userKey   String   @unique
+  createdAt DateTime @default(now())
+}
+
 // 퀴즈 세션 (문제 하나)
 model QuizSession {
   id              String   @id @default(cuid())

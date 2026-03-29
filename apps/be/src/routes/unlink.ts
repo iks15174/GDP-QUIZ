@@ -25,6 +25,7 @@ export const unlinkRoutes: FastifyPluginAsync = async (fastify) => {
       prisma.userCountryView.deleteMany({ where: { userId: userKey } }),
       prisma.userStreak.deleteMany({ where: { userId: userKey } }),
       prisma.quizSession.deleteMany({ where: { userId: userKey } }),
+      prisma.user.deleteMany({ where: { userKey } }),
     ]);
 
     fastify.log.info({ userKey: userKey.slice(0, 8) + '...' }, '유저 탈퇴 처리 완료');

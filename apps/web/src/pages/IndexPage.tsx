@@ -8,7 +8,7 @@ export default function IndexPage() {
   const navigate = useNavigate();
   const { showAd } = useAd();
   const { canFreePlay, consumeFreePlay } = useDailyFreePlay();
-  const { isLoggedIn, login } = useAuth();
+  const { isLoggedIn, login, validating } = useAuth();
   const [loginLoading, setLoginLoading] = useState(false);
 
   const handleLogin = async () => {
@@ -67,7 +67,12 @@ export default function IndexPage() {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
-        {!isLoggedIn ? (
+        {validating ? (
+          <div style={{ paddingTop: 17, paddingBottom: 17 }}>
+            <div style={{ width: 24, height: 24, border: '3px solid #E5E7EB', borderTopColor: '#2563EB', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          </div>
+        ) : !isLoggedIn ? (
           <button
             onClick={handleLogin}
             disabled={loginLoading}
@@ -99,3 +104,4 @@ export default function IndexPage() {
     </div>
   );
 }
+
