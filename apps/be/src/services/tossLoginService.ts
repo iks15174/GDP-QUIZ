@@ -41,8 +41,11 @@ export async function generateAccessToken(
     throw new Error(`토큰 발급 실패: ${response.status} ${text}`);
   }
 
-  const data = (await response.json()) as { accessToken: string; refreshToken: string };
-  return data;
+  const data = (await response.json()) as { resultType: string; success: { accessToken: string; refreshToken: string } | null; error?: { errorCode: string; reason: string } };
+  if (data.resultType !== 'SUCCESS' || !data.success) {
+    throw new Error(`토큰 발급 실패: ${data.error?.errorCode} ${data.error?.reason}`);
+  }
+  return data.success;
 }
 
 export async function getLoginMe(accessToken: string): Promise<{ userKey: string }> {
@@ -63,7 +66,9 @@ export async function getLoginMe(accessToken: string): Promise<{ userKey: string
     throw new Error(`사용자 정보 조회 실패: ${response.status} ${text}`);
   }
 
-  const data = await response.json();
-  console.log('[tossLoginService] login-me 응답:', JSON.stringify(data));
-  return { userKey: (data as any).userKey };
+  const data = (await response.json()) as { resultType: string; success: { userKey: number } | null; error?: { errorCode: string; reason: string } };
+  if (data.resultType !== 'SUCCESS' || !data.success) {
+    throw new Error(`사용자 정보 조회 실패: ${data.error?.errorCode} ${data.error?.reason}`);
+  }
+  return { userKey: String(data.success.userKey) };
 }
