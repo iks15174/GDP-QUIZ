@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { appLogin } from '@apps-in-toss/web-framework';
+import config from '../config';
 
 const AUTH_KEY = 'ait_user_key';
 
@@ -11,7 +12,7 @@ export function useAuth() {
   const login = async (): Promise<string> => {
     const { authorizationCode, referrer } = await appLogin();
 
-    const res = await fetch('/api/auth/login', {
+    const res = await fetch(`${config.apiBaseUrl}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ authorizationCode, referrer }),
