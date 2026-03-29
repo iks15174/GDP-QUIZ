@@ -71,7 +71,7 @@ export default function QuizPage() {
     try {
       const result = await api.submitAnswer({ quizId, userId: userId!, selectedCode: code });
       setAnswer(result);
-      if (result.isCorrect) setStreak(result.streak.current);
+      if (result.isCorrect) setStreak(result.rewardEarned ? 3 : result.streak.current);
       setPhase(result.isCorrect ? 'correct' : 'wrong');
     } catch (e) {
       console.error('[submitAnswer] 에러:', e);

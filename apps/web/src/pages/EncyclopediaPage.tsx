@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, EncyclopediaCountry } from '../services/api';
-import { useUserId } from '../hooks/useUserId';
+import { useAuth } from '../hooks/useAuth';
 
 const KRW_RATE = 1380;
 
@@ -51,7 +51,7 @@ function CountryRow({ country }: { country: EncyclopediaCountry }) {
 
 export default function EncyclopediaPage() {
   const navigate = useNavigate();
-  const userId = useUserId();
+  const { userKey: userId } = useAuth();
   const [countries, setCountries] = useState<EncyclopediaCountry[]>([]);
   const [totalCountries, setTotalCountries] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -59,7 +59,7 @@ export default function EncyclopediaPage() {
 
   useEffect(() => {
     api
-      .getEncyclopedia(userId)
+      .getEncyclopedia(userId!)
       .then((res) => {
         setCountries(res.countries);
         setTotalCountries(res.totalCountries);
