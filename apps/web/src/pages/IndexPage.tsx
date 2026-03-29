@@ -15,6 +15,7 @@ export default function IndexPage() {
     setLoginLoading(true);
     try {
       await login();
+      navigate('/quiz');
     } finally {
       setLoginLoading(false);
     }
