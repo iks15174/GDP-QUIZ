@@ -227,7 +227,7 @@ sudo -u "$APP_USER" npm run build
 # ----------------------------------------------------
 echo "[11] pm2 시작..."
 pm2 delete gdp-worldcup-be 2>/dev/null || true
-pm2 start "$APP_DIR/dist/index.js" --name gdp-worldcup-be
+pm2 start "$APP_DIR/dist/index.js" --name gdp-worldcup-be --node-args="--env-file=$APP_DIR/.env"
 pm2 save
 env PATH="$PATH:/usr/bin" pm2 startup systemd -u root --hp /root
 systemctl enable pm2-root
