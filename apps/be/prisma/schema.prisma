@@ -42,6 +42,7 @@ model QuizSession {
   correctCode     String   // GDP 높은 나라
   answeredCode    String?  // 유저가 선택한 나라
   isCorrect       Boolean?
+  isNewAttempt    Boolean  @default(false) // 새 도전 시작(streak=0)이면 true
   createdAt       DateTime @default(now())
   answeredAt      DateTime?
 

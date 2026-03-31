@@ -25,7 +25,7 @@ export const quizRoutes: FastifyPluginAsync = async (fastify) => {
     if (!userId) return reply.status(400).send({ error: 'userId가 필요합니다.' });
 
     const attemptsToday = await prisma.quizSession.count({
-      where: { userId, createdAt: { gte: startOfToday() } },
+      where: { userId, isNewAttempt: true, createdAt: { gte: startOfToday() } },
     });
 
     return { attemptsToday, maxAttempts: MAX_DAILY_ATTEMPTS, limitReached: attemptsToday >= MAX_DAILY_ATTEMPTS };
@@ -39,12 +39,18 @@ export const quizRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.status(400).send({ error: 'userId가 필요합니다.' });
     }
 
-    // 하루 최대 도전 횟수 제한
-    const attemptsToday = await prisma.quizSession.count({
-      where: { userId, createdAt: { gte: startOfToday() } },
-    });
-    if (attemptsToday >= MAX_DAILY_ATTEMPTS) {
-      return reply.status(429).send({ error: 'DAILY_LIMIT_REACHED', attemptsToday, maxAttempts: MAX_DAILY_ATTEMPTS });
+    // 현재 streak 조회 → 0이면 새 도전 시작
+    const userStreak = await prisma.userStreak.findUnique({ where: { userId } });
+    const isNewAttempt = (userStreak?.streak ?? 0) === 0;
+
+    // 새 도전 시작일 때만 하루 제한 체크
+    if (isNewAttempt) {
+      const attemptsToday = await prisma.quizSession.count({
+        where: { userId, isNewAttempt: true, createdAt: { gte: startOfToday() } },
+      });
+      if (attemptsToday >= MAX_DAILY_ATTEMPTS) {
+        return reply.status(429).send({ error: 'DAILY_LIMIT_REACHED', attemptsToday, maxAttempts: MAX_DAILY_ATTEMPTS });
+      }
     }
 
     const result = await getTwoRandomCountries();
@@ -62,6 +68,7 @@ export const quizRoutes: FastifyPluginAsync = async (fastify) => {
         country1Code: country1.code,
         country2Code: country2.code,
         correctCode,
+        isNewAttempt,
       },
     });
 
