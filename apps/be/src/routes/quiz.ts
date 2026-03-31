@@ -2,6 +2,7 @@ import { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../plugins/prisma.js';
 import { getTwoRandomCountries } from '../services/countryService.js';
+import { grantPromotionReward } from '../services/promotionService.js';
 
 const answerSchema = z.object({
   quizId: z.string(),
@@ -95,13 +96,18 @@ export const quizRoutes: FastifyPluginAsync = async (fastify) => {
 
     let rewardEarned = false;
 
-    // streak 3 달성 → 1원 지급 + 초기화
+    // streak 3 달성 → 토스 포인트 지급 + 초기화
     if (isCorrect && streak.streak >= 3) {
       await prisma.userStreak.update({
         where: { userId },
         data: { streak: 0, totalWins: { increment: 1 } },
       });
       rewardEarned = true;
+      try {
+        await grantPromotionReward(userId);
+      } catch (err) {
+        fastify.log.error({ err }, '프로모션 리워드 지급 실패');
+      }
     }
 
     // 정답인 경우 두 나라 모두 백과사전에 기록

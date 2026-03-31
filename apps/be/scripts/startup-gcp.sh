@@ -13,6 +13,7 @@
 #   ait-decrypt-aad   : 앱인토스 복호화 AAD (이메일 수령)
 #   ait-mtls-cert-b64 : mTLS 공개 인증서 base64 인코딩값 (gdp-quiz-login_public.crt)
 #   ait-mtls-key-b64  : mTLS 개인 키 base64 인코딩값 (gdp-quiz-login_private.key)
+#   ait-promotion-code: 앱인토스 프로모션 코드 ID (콘솔 발급)
 #
 # 인증서 base64 인코딩 방법 (로컬에서 실행):
 #   base64 -w 0 gdp-quiz-login_public.crt
@@ -44,6 +45,7 @@ AIT_DECRYPT_AAD=$(curl -sf -H "$H" "$META/ait-decrypt-aad" || echo "")
 AIT_MTLS_CERT_B64=$(curl -sf -H "$H" "$META/ait-mtls-cert-b64" || echo "")
 AIT_UNLINK_SECRET=$(curl -sf -H "$H" "$META/ait-unlink-secret" || echo "")
 AIT_MTLS_KEY_B64=$(curl -sf -H "$H" "$META/ait-mtls-key-b64" || echo "")
+AIT_PROMOTION_CODE=$(curl -sf -H "$H" "$META/ait-promotion-code" || echo "")
 
 # 공인 IP → nip.io 도메인 계산
 PUBLIC_IP=$(curl -sf -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/network-interfaces/0/access-configs/0/externalIp" || curl -sf "https://api.ipify.org" || echo "")
@@ -208,6 +210,8 @@ AIT_DECRYPT_AAD=$AIT_DECRYPT_AAD
 AIT_UNLINK_SECRET=$AIT_UNLINK_SECRET
 AIT_MTLS_CERT_PATH=./certs/gdp-quiz-login_public.crt
 AIT_MTLS_KEY_PATH=./certs/gdp-quiz-login_private.key
+AIT_PROMOTION_CODE=$AIT_PROMOTION_CODE
+AIT_PROMOTION_AMOUNT=1
 ENV
 chown "$APP_USER":"$APP_USER" "$APP_DIR/.env"
 chmod 600 "$APP_DIR/.env"
