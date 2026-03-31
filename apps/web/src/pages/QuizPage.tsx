@@ -228,14 +228,15 @@ export default function QuizPage() {
               </div>
             )}
             {renderAnswerDetail(answer)}
-            {(streak >= STREAK_MILESTONE || answer.rewardEarned) && (
-              <button onClick={() => navigate('/encyclopedia')} style={{ paddingTop: 15, paddingBottom: 15, borderRadius: 14, fontSize: 15, fontWeight: 600, color: '#4B5563', border: '1px solid #E5E7EB', backgroundColor: '#FFFFFF' }}>
-                학습 기록 보기
+            {(streak >= STREAK_MILESTONE || answer.rewardEarned) ? (
+              <button onClick={() => navigate('/encyclopedia')} style={{ backgroundColor: '#2563EB', paddingTop: 16, paddingBottom: 16, borderRadius: 14, fontSize: 16, fontWeight: 700, color: '#FFFFFF', letterSpacing: -0.3 }}>
+                내 학습 기록 보기
+              </button>
+            ) : (
+              <button onClick={loadQuiz} style={{ backgroundColor: '#2563EB', paddingTop: 16, paddingBottom: 16, borderRadius: 14, fontSize: 16, fontWeight: 700, color: '#FFFFFF', letterSpacing: -0.3 }}>
+                다음 문제
               </button>
             )}
-            <button onClick={loadQuiz} style={{ backgroundColor: '#2563EB', paddingTop: 16, paddingBottom: 16, borderRadius: 14, fontSize: 16, fontWeight: 700, color: '#FFFFFF', letterSpacing: -0.3 }}>
-              다음 문제
-            </button>
           </div>
         )}
 
