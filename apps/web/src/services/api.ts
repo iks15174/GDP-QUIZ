@@ -2,6 +2,16 @@ import config from '../config';
 
 const BASE_URL = config.apiBaseUrl;
 
+export class DailyLimitError extends Error {
+  attemptsToday: number;
+  maxAttempts: number;
+  constructor(attemptsToday: number, maxAttempts: number) {
+    super('DAILY_LIMIT_REACHED');
+    this.attemptsToday = attemptsToday;
+    this.maxAttempts = maxAttempts;
+  }
+}
+
 export interface QuizCountry {
   code: string;
   nameKo: string;
@@ -60,8 +70,17 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  getQuiz: (userId: string) =>
-    request<QuizResponse>(`/api/quiz?userId=${encodeURIComponent(userId)}`),
+  getQuiz: async (userId: string): Promise<QuizResponse> => {
+    const res = await fetch(`${BASE_URL}/api/quiz?userId=${encodeURIComponent(userId)}`, {
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (res.status === 429) {
+      const data = await res.json() as { attemptsToday: number; maxAttempts: number };
+      throw new DailyLimitError(data.attemptsToday, data.maxAttempts);
+    }
+    if (!res.ok) throw new Error(`API 오류: ${res.status}`);
+    return res.json() as Promise<QuizResponse>;
+  },
 
   submitAnswer: (body: { quizId: string; userId: string; selectedCode: string }) =>
     request<AnswerResponse>('/api/quiz/answer', {
@@ -77,5 +96,10 @@ export const api = {
   getEncyclopedia: (userId: string) =>
     request<{ countries: EncyclopediaCountry[]; totalCountries: number }>(
       `/api/encyclopedia?userId=${encodeURIComponent(userId)}`
+    ),
+
+  getDailyStatus: (userId: string) =>
+    request<{ attemptsToday: number; maxAttempts: number; limitReached: boolean }>(
+      `/api/quiz/daily-status?userId=${encodeURIComponent(userId)}`
     ),
 };

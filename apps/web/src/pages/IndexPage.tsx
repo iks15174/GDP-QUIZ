@@ -1,15 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAd } from '../hooks/useAd';
 import { useDailyFreePlay } from '../hooks/useDailyFreePlay';
 import { useAuth } from '../hooks/useAuth';
+import { api } from '../services/api';
 
 export default function IndexPage() {
   const navigate = useNavigate();
   const { showAd } = useAd();
   const { canFreePlay, consumeFreePlay } = useDailyFreePlay();
-  const { isLoggedIn, login, validating } = useAuth();
+  const { isLoggedIn, login, validating, userKey } = useAuth();
   const [loginLoading, setLoginLoading] = useState(false);
+  const [dailyStatus, setDailyStatus] = useState<{ attemptsToday: number; maxAttempts: number; limitReached: boolean } | null>(null);
+
+  useEffect(() => {
+    if (isLoggedIn && userKey) {
+      api.getDailyStatus(userKey).then(setDailyStatus).catch(() => {});
+    }
+  }, [isLoggedIn, userKey]);
 
   const handleLogin = async () => {
     setLoginLoading(true);
@@ -83,14 +91,29 @@ export default function IndexPage() {
           </button>
         ) : (
           <>
-            <button
-              onClick={handleStartQuiz}
-              style={{ width: '100%', backgroundColor: '#2563EB', paddingTop: 17, paddingBottom: 17, borderRadius: 14, fontSize: 17, fontWeight: 700, color: '#FFFFFF', letterSpacing: -0.3 }}
-            >
-              퀴즈 시작하기
-            </button>
-            {canFreePlay && (
+            {dailyStatus?.limitReached ? (
+              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                <button
+                  disabled
+                  style={{ width: '100%', backgroundColor: '#E5E7EB', paddingTop: 17, paddingBottom: 17, borderRadius: 14, fontSize: 17, fontWeight: 700, color: '#9CA3AF', letterSpacing: -0.3 }}
+                >
+                  퀴즈 시작하기
+                </button>
+                <span style={{ fontSize: 13, color: '#DC2626', fontWeight: 600 }}>오늘 10번 모두 도전했어요. 내일 다시 찾아와주세요!</span>
+              </div>
+            ) : (
+              <button
+                onClick={handleStartQuiz}
+                style={{ width: '100%', backgroundColor: '#2563EB', paddingTop: 17, paddingBottom: 17, borderRadius: 14, fontSize: 17, fontWeight: 700, color: '#FFFFFF', letterSpacing: -0.3 }}
+              >
+                퀴즈 시작하기
+              </button>
+            )}
+            {!dailyStatus?.limitReached && canFreePlay && (
               <span style={{ fontSize: 13, color: '#059669', fontWeight: 600 }}>오늘 첫 도전은 무료예요</span>
+            )}
+            {dailyStatus && !dailyStatus.limitReached && (
+              <span style={{ fontSize: 12, color: '#9CA3AF' }}>오늘 {dailyStatus.attemptsToday}/{dailyStatus.maxAttempts}번 도전</span>
             )}
             <button
               onClick={() => navigate('/encyclopedia')}

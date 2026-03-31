@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CountryCard } from '../components/CountryCard';
 import { Timer } from '../components/Timer';
 import { StreakBar } from '../components/StreakBar';
-import { api, QuizCountry, AnswerResponse } from '../services/api';
+import { api, QuizCountry, AnswerResponse, DailyLimitError } from '../services/api';
 import { useTimer } from '../hooks/useTimer';
 import { useAuth } from '../hooks/useAuth';
 import { useAd } from '../hooks/useAd';
@@ -12,7 +12,7 @@ const QUIZ_SECONDS = 5;
 const KRW_RATE = 1380;
 const STREAK_MILESTONE = 3;
 
-type Phase = 'loading' | 'quiz' | 'submitting' | 'correct' | 'wrong' | 'timeout' | 'error';
+type Phase = 'loading' | 'quiz' | 'submitting' | 'correct' | 'wrong' | 'timeout' | 'error' | 'limit';
 
 function formatUSD(gdp: number): string {
   return '$' + Math.round(gdp).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
@@ -41,6 +41,7 @@ export default function QuizPage() {
   const { remaining, start, stop } = useTimer(QUIZ_SECONDS, () => setPhase('timeout'));
 
   useEffect(() => {
+    api.getStreak(userId!).then(({ streak }) => setStreak(streak)).catch(() => {});
     loadQuiz();
   }, []);
 
@@ -56,7 +57,10 @@ export default function QuizPage() {
       setPhase('quiz');
       start();
     } catch (e) {
-      console.error('[loadQuiz] 에러:', e);
+      if (e instanceof DailyLimitError) {
+        setPhase('limit');
+        return;
+      }
       setErrorMsg('문제를 불러오지 못했어요.');
       setPhase('error');
     }
@@ -224,15 +228,14 @@ export default function QuizPage() {
               </div>
             )}
             {renderAnswerDetail(answer)}
-            {(streak >= STREAK_MILESTONE || answer.rewardEarned) ? (
+            {(streak >= STREAK_MILESTONE || answer.rewardEarned) && (
               <button onClick={() => navigate('/encyclopedia')} style={{ paddingTop: 15, paddingBottom: 15, borderRadius: 14, fontSize: 15, fontWeight: 600, color: '#4B5563', border: '1px solid #E5E7EB', backgroundColor: '#FFFFFF' }}>
                 학습 기록 보기
               </button>
-            ) : (
-              <button onClick={loadQuiz} style={{ backgroundColor: '#2563EB', paddingTop: 16, paddingBottom: 16, borderRadius: 14, fontSize: 16, fontWeight: 700, color: '#FFFFFF', letterSpacing: -0.3 }}>
-                다음 문제
-              </button>
             )}
+            <button onClick={loadQuiz} style={{ backgroundColor: '#2563EB', paddingTop: 16, paddingBottom: 16, borderRadius: 14, fontSize: 16, fontWeight: 700, color: '#FFFFFF', letterSpacing: -0.3 }}>
+              다음 문제
+            </button>
           </div>
         )}
 
@@ -243,6 +246,20 @@ export default function QuizPage() {
             {renderAnswerDetail(answer)}
             <button onClick={() => handleWatchAd(loadQuiz)} style={{ backgroundColor: '#2563EB', paddingTop: 16, paddingBottom: 16, borderRadius: 14, fontSize: 16, fontWeight: 700, color: '#FFFFFF', letterSpacing: -0.3 }}>
               광고 보고 다시 도전
+            </button>
+          </div>
+        )}
+
+        {/* 일일 한도 초과 */}
+        {phase === 'limit' && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, paddingTop: 32, paddingBottom: 32 }}>
+            <span style={{ fontSize: 36 }}>😴</span>
+            <span style={{ fontSize: 20, fontWeight: 800, color: '#0F172A', letterSpacing: -0.5 }}>오늘 도전 끝!</span>
+            <span style={{ fontSize: 14, color: '#9CA3AF', textAlign: 'center', lineHeight: 1.6 }}>
+              하루 최대 10번까지 도전할 수 있어요{'\n'}내일 다시 찾아와 주세요
+            </span>
+            <button onClick={() => navigate('/')} style={{ marginTop: 8, paddingTop: 14, paddingBottom: 14, paddingLeft: 28, paddingRight: 28, borderRadius: 14, fontSize: 15, fontWeight: 600, color: '#4B5563', border: '1px solid #E5E7EB', backgroundColor: '#FFFFFF' }}>
+              홈으로
             </button>
           </div>
         )}

@@ -122,6 +122,16 @@ export default function EncyclopediaPage() {
         )}
 
       </div>
+
+      {/* 하단 고정 재도전 버튼 */}
+      <div style={{ padding: '12px 20px 20px', borderTop: '1px solid #F3F4F6', backgroundColor: '#F7F8FA' }}>
+        <button
+          onClick={() => navigate('/quiz')}
+          style={{ width: '100%', backgroundColor: '#2563EB', paddingTop: 16, paddingBottom: 16, borderRadius: 14, fontSize: 16, fontWeight: 700, color: '#FFFFFF', letterSpacing: -0.3 }}
+        >
+          퀴즈 다시 도전하고 1원 받기
+        </button>
+      </div>
     </div>
   );
 }

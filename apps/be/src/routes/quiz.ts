@@ -10,13 +10,41 @@ const answerSchema = z.object({
   selectedCode: z.string(),
 });
 
+const MAX_DAILY_ATTEMPTS = 10;
+
+function startOfToday(): Date {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
 export const quizRoutes: FastifyPluginAsync = async (fastify) => {
+  // GET /api/quiz/daily-status - 오늘 도전 횟수 조회
+  fastify.get('/daily-status', async (request, reply) => {
+    const { userId } = request.query as { userId?: string };
+    if (!userId) return reply.status(400).send({ error: 'userId가 필요합니다.' });
+
+    const attemptsToday = await prisma.quizSession.count({
+      where: { userId, createdAt: { gte: startOfToday() } },
+    });
+
+    return { attemptsToday, maxAttempts: MAX_DAILY_ATTEMPTS, limitReached: attemptsToday >= MAX_DAILY_ATTEMPTS };
+  });
+
   // GET /api/quiz - 새 퀴즈 시작 (랜덤 국가 2개)
   fastify.get('/', async (request, reply) => {
     const { userId } = request.query as { userId?: string };
 
     if (!userId) {
       return reply.status(400).send({ error: 'userId가 필요합니다.' });
+    }
+
+    // 하루 최대 도전 횟수 제한
+    const attemptsToday = await prisma.quizSession.count({
+      where: { userId, createdAt: { gte: startOfToday() } },
+    });
+    if (attemptsToday >= MAX_DAILY_ATTEMPTS) {
+      return reply.status(429).send({ error: 'DAILY_LIMIT_REACHED', attemptsToday, maxAttempts: MAX_DAILY_ATTEMPTS });
     }
 
     const result = await getTwoRandomCountries();

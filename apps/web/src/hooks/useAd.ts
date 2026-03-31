@@ -35,16 +35,22 @@ export function useAd() {
       return;
     }
 
+    let rewarded = false;
+
     showFullScreenAd({
       options: { adGroupId: AD_GROUP_ID },
       onEvent: (event) => {
         if (event.type === 'userEarnedReward') {
+          rewarded = true;
           onWatched();
         }
         if (event.type === 'dismissed') {
           setIsAdLoaded(false);
           loadAd();
-          onDismissed();
+          if (!rewarded) {
+            // 일반 전면 광고: userEarnedReward 없이 dismissed만 오는 경우
+            onWatched();
+          }
         }
       },
       onError: () => onDismissed(),
