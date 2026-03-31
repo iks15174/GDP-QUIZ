@@ -229,7 +229,7 @@ export default function QuizPage() {
                 학습 기록 보기
               </button>
             ) : (
-              <button onClick={() => handleWatchAd(loadQuiz)} style={{ backgroundColor: '#2563EB', paddingTop: 16, paddingBottom: 16, borderRadius: 14, fontSize: 16, fontWeight: 700, color: '#FFFFFF', letterSpacing: -0.3 }}>
+              <button onClick={loadQuiz} style={{ backgroundColor: '#2563EB', paddingTop: 16, paddingBottom: 16, borderRadius: 14, fontSize: 16, fontWeight: 700, color: '#FFFFFF', letterSpacing: -0.3 }}>
                 다음 문제
               </button>
             )}
