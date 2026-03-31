@@ -52,11 +52,12 @@ model QuizSession {
 
 // 유저 연속 정답 streak
 model UserStreak {
-  id          String   @id @default(cuid())
-  userId      String   @unique
-  streak      Int      @default(0) // 현재 연속 정답 수 (0~3)
-  totalWins   Int      @default(0) // 누적 1원 수령 횟수
-  updatedAt   DateTime @updatedAt
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  streak            Int      @default(0) // 현재 연속 정답 수 (0~3)
+  totalWins         Int      @default(0) // 누적 1원 수령 횟수
+  currentAttemptId  String?  // 현재 진행 중인 도전 ID (null=새 도전 시작 가능)
+  updatedAt         DateTime @updatedAt
 }
 
 // 유저가 학습한 국가 기록 (백과사전 페이지용)

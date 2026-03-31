@@ -1,5 +1,6 @@
 import { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
+import { randomUUID } from 'crypto';
 import { prisma } from '../plugins/prisma.js';
 import { getTwoRandomCountries } from '../services/countryService.js';
 import { grantPromotionReward } from '../services/promotionService.js';
@@ -39,9 +40,9 @@ export const quizRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.status(400).send({ error: 'userId가 필요합니다.' });
     }
 
-    // 현재 streak 조회 → 0이면 새 도전 시작
+    // currentAttemptId가 null이면 새 도전 시작, non-null이면 이어서 도전
     const userStreak = await prisma.userStreak.findUnique({ where: { userId } });
-    const isNewAttempt = (userStreak?.streak ?? 0) === 0;
+    const isNewAttempt = !userStreak?.currentAttemptId;
 
     // 새 도전 시작일 때만 하루 제한 체크
     if (isNewAttempt) {
@@ -61,6 +62,16 @@ export const quizRoutes: FastifyPluginAsync = async (fastify) => {
     const { country1, country2 } = result;
     const correctCode =
       country1.gdpPerCapita >= country2.gdpPerCapita ? country1.code : country2.code;
+
+    // 새 도전이면 attemptId 발급 후 UserStreak에 저장
+    if (isNewAttempt) {
+      const newAttemptId = randomUUID();
+      await prisma.userStreak.upsert({
+        where: { userId },
+        create: { userId, currentAttemptId: newAttemptId },
+        update: { currentAttemptId: newAttemptId },
+      });
+    }
 
     const session = await prisma.quizSession.create({
       data: {
@@ -131,11 +142,11 @@ export const quizRoutes: FastifyPluginAsync = async (fastify) => {
 
     let rewardEarned = false;
 
-    // streak 3 달성 → 토스 포인트 지급 + 초기화
+    // streak 3 달성 → 토스 포인트 지급 + 초기화 + 다음 도전 준비
     if (isCorrect && streak.streak >= 3) {
       await prisma.userStreak.update({
         where: { userId },
-        data: { streak: 0, totalWins: { increment: 1 } },
+        data: { streak: 0, totalWins: { increment: 1 }, currentAttemptId: null },
       });
       rewardEarned = true;
       try {
