@@ -192,7 +192,7 @@ export default function QuizPage() {
         )}
 
         {/* 질문 */}
-        {phase !== 'timeout' && (
+        {phase !== 'timeout' && phase !== 'limit' && phase !== 'error' && (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
             <span style={{ fontSize: 20, fontWeight: 700, color: '#0F172A', textAlign: 'center', letterSpacing: -0.5 }}>1인당 GDP가 더 높은 나라는?</span>
             {phase === 'quiz' && <span style={{ fontSize: 13, color: '#9CA3AF' }}>카드를 눌러 선택하세요</span>}
