@@ -4,6 +4,7 @@ import { useAd } from '../hooks/useAd';
 import { useDailyFreePlay } from '../hooks/useDailyFreePlay';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../services/api';
+import { BannerAd } from '../components/BannerAd';
 
 export default function IndexPage() {
   const navigate = useNavigate();
@@ -74,6 +75,8 @@ export default function IndexPage() {
           </div>
         ))}
       </div>
+
+      <BannerAd />
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
         {validating ? (

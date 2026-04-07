@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, EncyclopediaCountry } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
+import { BannerAd } from '../components/BannerAd';
 
 const KRW_RATE = 1380;
 
@@ -123,6 +124,7 @@ export default function EncyclopediaPage() {
 
       </div>
 
+      <BannerAd />
       {/* 하단 고정 재도전 버튼 */}
       <div style={{ padding: '12px 20px 20px', borderTop: '1px solid #F3F4F6', backgroundColor: '#F7F8FA' }}>
         <button

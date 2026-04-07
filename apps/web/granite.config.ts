@@ -5,7 +5,7 @@ export default defineConfig({
   brand: {
     displayName: 'GDP 경제 퀴즈',
     primaryColor: '#3182F6',
-    icon: '',
+    icon: 'https://static.toss.im/appsintoss/5523/bc3b273f-ab7d-41c3-86ef-9075a9f7a0c4.png',
   },
   web: {
     host: 'localhost',

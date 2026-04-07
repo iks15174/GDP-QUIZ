@@ -102,4 +102,9 @@ export const api = {
     request<{ attemptsToday: number; maxAttempts: number; limitReached: boolean }>(
       `/api/quiz/daily-status?userId=${encodeURIComponent(userId)}`
     ),
+
+  retryQuiz: (previousQuizId: string, userId: string): Promise<QuizResponse> =>
+    request<QuizResponse>(
+      `/api/quiz/retry?previousQuizId=${encodeURIComponent(previousQuizId)}&userId=${encodeURIComponent(userId)}`
+    ),
 };

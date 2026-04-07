@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CountryCard } from '../components/CountryCard';
 import { Timer } from '../components/Timer';
 import { StreakBar } from '../components/StreakBar';
+import { BannerAd } from '../components/BannerAd';
 import { api, QuizCountry, AnswerResponse, DailyLimitError } from '../services/api';
 import { useTimer } from '../hooks/useTimer';
 import { useAuth } from '../hooks/useAuth';
@@ -80,6 +81,24 @@ export default function QuizPage() {
     } catch (e) {
       console.error('[submitAnswer] 에러:', e);
       setErrorMsg('정답 제출 중 오류가 발생했어요.');
+      setPhase('error');
+    }
+  };
+
+  const retryQuiz = async () => {
+    if (!quizId) { loadQuiz(); return; }
+    try {
+      setPhase('loading');
+      setSelectedCode(null);
+      setAnswer(null);
+      setShowRateInfo(false);
+      const quiz = await api.retryQuiz(quizId, userId!);
+      setQuizId(quiz.quizId);
+      setCountries(quiz.countries);
+      setPhase('quiz');
+      start();
+    } catch {
+      setErrorMsg('문제를 불러오지 못했어요.');
       setPhase('error');
     }
   };
@@ -185,7 +204,7 @@ export default function QuizPage() {
               <span style={{ fontSize: 22, fontWeight: 800, color: '#DC2626', letterSpacing: -0.5 }}>시간 초과</span>
               <span style={{ fontSize: 14, color: '#9CA3AF', textAlign: 'center', lineHeight: 1.5 }}>아쉽게도 시간이 끝났어요{'\n'}광고를 보고 다시 도전해보세요</span>
             </div>
-            <button onClick={() => handleWatchAd(loadQuiz)} style={{ backgroundColor: '#2563EB', paddingTop: 16, paddingBottom: 16, borderRadius: 14, fontSize: 16, fontWeight: 700, color: '#FFFFFF', letterSpacing: -0.3 }}>
+            <button onClick={() => handleWatchAd(retryQuiz)} style={{ backgroundColor: '#2563EB', paddingTop: 16, paddingBottom: 16, borderRadius: 14, fontSize: 16, fontWeight: 700, color: '#FFFFFF', letterSpacing: -0.3 }}>
               광고 보고 다시 도전
             </button>
           </div>
@@ -245,7 +264,7 @@ export default function QuizPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <span style={{ fontSize: 22, fontWeight: 800, textAlign: 'center', letterSpacing: -0.5, color: '#DC2626' }}>틀렸어요</span>
             {renderAnswerDetail(answer)}
-            <button onClick={() => handleWatchAd(loadQuiz)} style={{ backgroundColor: '#2563EB', paddingTop: 16, paddingBottom: 16, borderRadius: 14, fontSize: 16, fontWeight: 700, color: '#FFFFFF', letterSpacing: -0.3 }}>
+            <button onClick={() => handleWatchAd(retryQuiz)} style={{ backgroundColor: '#2563EB', paddingTop: 16, paddingBottom: 16, borderRadius: 14, fontSize: 16, fontWeight: 700, color: '#FFFFFF', letterSpacing: -0.3 }}>
               광고 보고 다시 도전
             </button>
           </div>
@@ -276,6 +295,7 @@ export default function QuizPage() {
         )}
 
       </div>
+      <BannerAd />
     </div>
   );
 }

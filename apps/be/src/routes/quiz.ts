@@ -32,6 +32,42 @@ export const quizRoutes: FastifyPluginAsync = async (fastify) => {
     return { attemptsToday, maxAttempts: MAX_DAILY_ATTEMPTS, limitReached: attemptsToday >= MAX_DAILY_ATTEMPTS };
   });
 
+  // GET /api/quiz/retry?previousQuizId=xxx&userId=yyy - 같은 문제로 재도전 (새 도전 카운트 미소모)
+  fastify.get('/retry', async (request, reply) => {
+    const { previousQuizId, userId } = request.query as { previousQuizId?: string; userId?: string };
+    if (!previousQuizId || !userId) {
+      return reply.status(400).send({ error: 'previousQuizId와 userId가 필요합니다.' });
+    }
+
+    const prevSession = await prisma.quizSession.findUnique({ where: { id: previousQuizId } });
+    if (!prevSession || prevSession.userId !== userId) {
+      return reply.status(404).send({ error: '세션을 찾을 수 없습니다.' });
+    }
+
+    const session = await prisma.quizSession.create({
+      data: {
+        userId,
+        country1Code: prevSession.country1Code,
+        country2Code: prevSession.country2Code,
+        correctCode: prevSession.correctCode,
+        isNewAttempt: false,
+      },
+    });
+
+    const [country1, country2] = await Promise.all([
+      prisma.country.findUnique({ where: { code: prevSession.country1Code } }),
+      prisma.country.findUnique({ where: { code: prevSession.country2Code } }),
+    ]);
+
+    return {
+      quizId: session.id,
+      countries: [
+        { code: country1!.code, nameKo: country1!.nameKo, nameEn: country1!.nameEn, flagEmoji: country1!.flagEmoji },
+        { code: country2!.code, nameKo: country2!.nameKo, nameEn: country2!.nameEn, flagEmoji: country2!.flagEmoji },
+      ],
+    };
+  });
+
   // GET /api/quiz - 새 퀴즈 시작 (랜덤 국가 2개)
   fastify.get('/', async (request, reply) => {
     const { userId } = request.query as { userId?: string };
