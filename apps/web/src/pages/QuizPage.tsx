@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CountryCard } from '../components/CountryCard';
 import { Timer } from '../components/Timer';
@@ -40,19 +40,22 @@ export default function QuizPage() {
   const [showRateInfo, setShowRateInfo] = useState(false);
 
   const { remaining, start, stop } = useTimer(QUIZ_SECONDS, () => setPhase('timeout'));
+  const isFreshStartRef = useRef(true);
 
   useEffect(() => {
-    api.getStreak(userId!).then(({ streak }) => setStreak(streak)).catch(() => {});
+    setStreak(0); // 홈에서 새로 진입: streak 항상 0부터 시작
     loadQuiz();
   }, []);
 
   const loadQuiz = async () => {
+    const isFresh = isFreshStartRef.current;
+    isFreshStartRef.current = false;
     try {
       setPhase('loading');
       setSelectedCode(null);
       setAnswer(null);
       setShowRateInfo(false);
-      const quiz = await api.getQuiz(userId!);
+      const quiz = await api.getQuiz(userId!, isFresh);
       setQuizId(quiz.quizId);
       setCountries(quiz.countries);
       setPhase('quiz');
@@ -76,7 +79,7 @@ export default function QuizPage() {
     try {
       const result = await api.submitAnswer({ quizId, userId: userId!, selectedCode: code });
       setAnswer(result);
-      if (result.isCorrect) setStreak(result.rewardEarned ? 3 : result.streak.current);
+      if (result.isCorrect) setStreak(result.rewardEarned ? 0 : result.streak.current);
       setPhase(result.isCorrect ? 'correct' : 'wrong');
     } catch (e) {
       console.error('[submitAnswer] 에러:', e);
@@ -187,11 +190,8 @@ export default function QuizPage() {
 
   return (
     <div style={{ minHeight: '100%', backgroundColor: '#F7F8FA', display: 'flex', flexDirection: 'column' }}>
+      <BannerAd />
       <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
-
-        <div style={{ textAlign: 'center' }}>
-          <span style={{ fontSize: 17, fontWeight: 700, color: '#0F172A', letterSpacing: -0.3 }}>GDP 스피드 퀴즈</span>
-        </div>
 
         <StreakBar streak={streak} />
 
@@ -295,7 +295,6 @@ export default function QuizPage() {
         )}
 
       </div>
-      <BannerAd />
     </div>
   );
 }

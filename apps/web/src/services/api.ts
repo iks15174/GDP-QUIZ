@@ -70,8 +70,10 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  getQuiz: async (userId: string): Promise<QuizResponse> => {
-    const res = await fetch(`${BASE_URL}/api/quiz?userId=${encodeURIComponent(userId)}`, {
+  getQuiz: async (userId: string, fresh = false): Promise<QuizResponse> => {
+    const params = new URLSearchParams({ userId });
+    if (fresh) params.set('fresh', 'true');
+    const res = await fetch(`${BASE_URL}/api/quiz?${params.toString()}`, {
       headers: { 'Content-Type': 'application/json' },
     });
     if (res.status === 429) {

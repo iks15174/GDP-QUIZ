@@ -24,7 +24,7 @@ export default function IndexPage() {
     setLoginLoading(true);
     try {
       await login();
-      navigate('/quiz');
+      // 로그인 후 홈에 머물며 퀴즈 시작 버튼을 통해 정상적으로 시작
     } finally {
       setLoginLoading(false);
     }
@@ -42,8 +42,12 @@ export default function IndexPage() {
     }
   };
 
+  const remaining = dailyStatus ? dailyStatus.maxAttempts - dailyStatus.attemptsToday : null;
+
   return (
     <div style={{ minHeight: '100%', backgroundColor: '#F7F8FA', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 20px', gap: 24 }}>
+
+      <BannerAd />
 
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
         <h1 style={{ fontSize: 40, fontWeight: 900, color: '#0F172A', letterSpacing: -1.5, textAlign: 'center', lineHeight: 1.2 }}>
@@ -76,9 +80,13 @@ export default function IndexPage() {
         ))}
       </div>
 
-      <BannerAd />
-
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
+        {isLoggedIn && remaining !== null && !dailyStatus?.limitReached && (
+          <span style={{ fontSize: 13, color: '#6B7280', fontWeight: 500 }}>
+            오늘 {remaining}번 도전 가능
+          </span>
+        )}
+
         {validating ? (
           <div style={{ paddingTop: 17, paddingBottom: 17 }}>
             <div style={{ width: 24, height: 24, border: '3px solid #E5E7EB', borderTopColor: '#2563EB', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
@@ -112,12 +120,6 @@ export default function IndexPage() {
                 퀴즈 시작하기
               </button>
             )}
-            {!dailyStatus?.limitReached && canFreePlay && (
-              <span style={{ fontSize: 13, color: '#059669', fontWeight: 600 }}>오늘 첫 도전은 무료예요</span>
-            )}
-            {dailyStatus && !dailyStatus.limitReached && (
-              <span style={{ fontSize: 12, color: '#9CA3AF' }}>오늘 {dailyStatus.attemptsToday}/{dailyStatus.maxAttempts}번 도전</span>
-            )}
             <button
               onClick={() => navigate('/encyclopedia')}
               style={{ width: '100%', paddingTop: 15, paddingBottom: 15, borderRadius: 14, fontSize: 15, fontWeight: 600, color: '#4B5563', border: '1px solid #E5E7EB', backgroundColor: '#FFFFFF' }}
@@ -131,4 +133,3 @@ export default function IndexPage() {
     </div>
   );
 }
-

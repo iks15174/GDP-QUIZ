@@ -70,15 +70,23 @@ export const quizRoutes: FastifyPluginAsync = async (fastify) => {
 
   // GET /api/quiz - 새 퀴즈 시작 (랜덤 국가 2개)
   fastify.get('/', async (request, reply) => {
-    const { userId } = request.query as { userId?: string };
+    const { userId, fresh } = request.query as { userId?: string; fresh?: string };
+    const isFresh = fresh === 'true';
 
     if (!userId) {
       return reply.status(400).send({ error: 'userId가 필요합니다.' });
     }
 
-    // currentAttemptId가 null이면 새 도전 시작, non-null이면 이어서 도전
-    const userStreak = await prisma.userStreak.findUnique({ where: { userId } });
-    const isNewAttempt = !userStreak?.currentAttemptId;
+    let isNewAttempt: boolean;
+
+    if (isFresh) {
+      // 홈에서 새로 시작: 항상 새 도전으로 카운트 + streak 초기화
+      isNewAttempt = true;
+    } else {
+      // 퀴즈 내 다음 문제: currentAttemptId가 없을 때만 새 도전
+      const userStreak = await prisma.userStreak.findUnique({ where: { userId } });
+      isNewAttempt = !userStreak?.currentAttemptId;
+    }
 
     // 새 도전 시작일 때만 하루 제한 체크
     if (isNewAttempt) {
@@ -99,13 +107,15 @@ export const quizRoutes: FastifyPluginAsync = async (fastify) => {
     const correctCode =
       country1.gdpPerCapita >= country2.gdpPerCapita ? country1.code : country2.code;
 
-    // 새 도전이면 attemptId 발급 후 UserStreak에 저장
+    // 새 도전이면 attemptId 발급 후 UserStreak에 저장 (fresh면 streak도 초기화)
     if (isNewAttempt) {
       const newAttemptId = randomUUID();
       await prisma.userStreak.upsert({
         where: { userId },
-        create: { userId, currentAttemptId: newAttemptId },
-        update: { currentAttemptId: newAttemptId },
+        create: { userId, streak: 0, totalWins: 0, currentAttemptId: newAttemptId },
+        update: isFresh
+          ? { streak: 0, currentAttemptId: newAttemptId }
+          : { currentAttemptId: newAttemptId },
       });
     }
 

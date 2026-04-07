@@ -117,7 +117,12 @@ function parseIndustries(country: { major_industry: string | null; country_iso_a
   return INDUSTRY_MAP[alpha2] ?? ['정보 없음'];
 }
 
-/** DB에 있는 국가 2개를 랜덤으로 뽑아 반환. 없으면 공공 API 전체 조회 후 저장 */
+/**
+ * GDP 기준으로 전체 국가를 BUCKET_COUNT개 구간으로 나눈 뒤,
+ * 같은 구간에서 2개를 뽑아 반환. 비슷한 GDP 나라끼리 대결하게 됨.
+ */
+const BUCKET_COUNT = 8;
+
 export async function getTwoRandomCountries() {
   let count = await prisma.country.count();
 
@@ -126,19 +131,29 @@ export async function getTwoRandomCountries() {
     count = await prisma.country.count();
   }
 
-  const countries = await prisma.$queryRaw<{ code: string }[]>`
-    SELECT code FROM "Country" ORDER BY RANDOM() LIMIT 2
-  `;
+  // GDP 오름차순 정렬
+  const all = await prisma.country.findMany({ orderBy: { gdpPerCapita: 'asc' } });
+  if (all.length < 2) return null;
 
-  if (countries.length < 2) return null;
+  // 균등 버킷 분할
+  const bucketSize = Math.ceil(all.length / BUCKET_COUNT);
+  const buckets: typeof all[] = [];
+  for (let i = 0; i < all.length; i += bucketSize) {
+    buckets.push(all.slice(i, i + bucketSize));
+  }
 
-  const [c1, c2] = await Promise.all([
-    prisma.country.findUnique({ where: { code: countries[0]!.code } }),
-    prisma.country.findUnique({ where: { code: countries[1]!.code } }),
-  ]);
+  // 2개 이상인 버킷만 추리고, 랜덤 선택
+  const eligible = buckets.filter((b) => b.length >= 2);
+  if (eligible.length === 0) return null;
 
-  if (!c1 || !c2) return null;
-  return { country1: c1, country2: c2 };
+  const bucket = eligible[Math.floor(Math.random() * eligible.length)]!;
+
+  // 버킷 내에서 2개 랜덤 선택 (중복 없이)
+  const idx1 = Math.floor(Math.random() * bucket.length);
+  let idx2 = Math.floor(Math.random() * (bucket.length - 1));
+  if (idx2 >= idx1) idx2++;
+
+  return { country1: bucket[idx1]!, country2: bucket[idx2]! };
 }
 
 /** 공공 API에서 전체 국가 GDP 데이터를 받아 DB에 저장 */
