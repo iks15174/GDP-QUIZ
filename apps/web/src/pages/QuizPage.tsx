@@ -10,7 +10,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useAd } from '../hooks/useAd';
 
 const QUIZ_SECONDS = 5;
-const KRW_RATE = 1380;
+const KRW_RATE = 1450;
 const STREAK_MILESTONE = 3;
 
 type Phase = 'loading' | 'quiz' | 'submitting' | 'correct' | 'wrong' | 'timeout' | 'error' | 'limit';
@@ -37,7 +37,6 @@ export default function QuizPage() {
   const [answer, setAnswer] = useState<AnswerResponse | null>(null);
   const [streak, setStreak] = useState(0);
   const [errorMsg, setErrorMsg] = useState('');
-  const [showRateInfo, setShowRateInfo] = useState(false);
 
   const { remaining, start, stop } = useTimer(QUIZ_SECONDS, () => setPhase('timeout'));
   const isFreshStartRef = useRef(true);
@@ -54,7 +53,6 @@ export default function QuizPage() {
       setPhase('loading');
       setSelectedCode(null);
       setAnswer(null);
-      setShowRateInfo(false);
       const quiz = await api.getQuiz(userId!, isFresh);
       setQuizId(quiz.quizId);
       setCountries(quiz.countries);
@@ -94,7 +92,6 @@ export default function QuizPage() {
       setPhase('loading');
       setSelectedCode(null);
       setAnswer(null);
-      setShowRateInfo(false);
       const quiz = await api.retryQuiz(quizId, userId!);
       setQuizId(quiz.quizId);
       setCountries(quiz.countries);
@@ -134,9 +131,8 @@ export default function QuizPage() {
   const renderAnswerDetail = (ans: AnswerResponse) => {
     const winner = ans.countries.find((c) => c.isCorrect)!;
     const loser = ans.countries.find((c) => !c.isCorrect)!;
-    const ratio = (winner.gdpPerCapita / loser.gdpPerCapita).toFixed(1);
 
-    const renderCard = (c: typeof winner, isWinner: boolean) => (
+const renderCard = (c: typeof winner, isWinner: boolean) => (
       <div key={c.code} style={{ backgroundColor: '#FFFFFF', borderRadius: 16, padding: 16, display: 'flex', flexDirection: 'column', gap: 12, border: isWinner ? '1.5px solid #2563EB' : '1px solid #E5E7EB' }}>
         <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -173,15 +169,6 @@ export default function QuizPage() {
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-          <span style={{ fontSize: 13, color: '#9CA3AF', fontWeight: 500 }}>{ratio}배 차이</span>
-          <button onClick={() => setShowRateInfo((v) => !v)} style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: '#E5E7EB', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: '#9CA3AF' }}>?</button>
-        </div>
-        {showRateInfo && (
-          <div style={{ backgroundColor: '#F9FAFB', borderRadius: 10, padding: 12, border: '1px solid #E5E7EB' }}>
-            <span style={{ fontSize: 12, color: '#4B5563', lineHeight: 1.5 }}>원화는 1 USD = 1,380원 기준으로 환산한 대략적인 값이에요.</span>
-          </div>
-        )}
         {renderCard(winner, true)}
         {renderCard(loser, false)}
       </div>
@@ -192,8 +179,6 @@ export default function QuizPage() {
     <div style={{ minHeight: '100%', backgroundColor: '#F7F8FA', display: 'flex', flexDirection: 'column' }}>
       <BannerAd />
       <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
-
-        <StreakBar streak={streak} />
 
         {phase === 'quiz' && <Timer remaining={remaining} total={QUIZ_SECONDS} />}
 
@@ -241,11 +226,15 @@ export default function QuizPage() {
         {phase === 'correct' && answer && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <span style={{ fontSize: 22, fontWeight: 800, textAlign: 'center', letterSpacing: -0.5, color: '#059669' }}>정답이에요!</span>
-            {streak > 0 && (
-              <div style={{ alignSelf: 'center', backgroundColor: '#FFFBEB', padding: '6px 14px', borderRadius: 20, border: '1px solid #FDE68A' }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#D97706' }}>{streak}연속 정답 중</span>
-              </div>
-            )}
+            <div style={{ alignSelf: 'center' }}>
+              {answer.rewardEarned ? (
+                <div style={{ backgroundColor: '#FFFBEB', padding: '8px 18px', borderRadius: 20, border: '1px solid #FDE68A' }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: '#D97706' }}>🎉 3연속 정답! 1원이 지급됐어요</span>
+                </div>
+              ) : (
+                <StreakBar streak={streak} />
+              )}
+            </div>
             {renderAnswerDetail(answer)}
             {(streak >= STREAK_MILESTONE || answer.rewardEarned) ? (
               <button onClick={() => navigate('/encyclopedia')} style={{ backgroundColor: '#2563EB', paddingTop: 16, paddingBottom: 16, borderRadius: 14, fontSize: 16, fontWeight: 700, color: '#FFFFFF', letterSpacing: -0.3 }}>
