@@ -46,19 +46,19 @@
 
 set -e
 
-TARGET="${1:-all}"   # gdp | balance | all(기본)
-
 LOG="/var/log/gdp-startup.log"
 exec > >(tee -a "$LOG") 2>&1
-
-echo "========================================"
-echo "스타트업 시작: $(date)  대상: $TARGET"
-echo "========================================"
 
 # ── 메타데이터 읽기 ────────────────────────────────────────
 META="http://metadata.google.internal/computeMetadata/v1/instance/attributes"
 H="Metadata-Flavor: Google"
 _meta() { curl -sf -H "$H" "$META/$1" || echo "${2:-}"; }
+
+TARGET="${1:-$(_meta deploy-target "all")}"   # gdp | balance | all(기본) — 메타데이터 'deploy-target' 으로도 제어 가능
+
+echo "========================================"
+echo "스타트업 시작: $(date)  대상: $TARGET"
+echo "========================================"
 
 # 공통
 DB_PASSWORD=$(_meta db-password)
