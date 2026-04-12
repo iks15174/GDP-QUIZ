@@ -79,6 +79,9 @@ AIT_PROMOTION_CODE=$(_meta ait-promotion-code)
 BALANCE_GIT_REPO=$(_meta balance-git-repo)
 BALANCE_ADMIN_KEY=$(_meta balance-admin-key "change-me")
 BALANCE_BRANCH=$(_meta balance-branch "main")
+BALANCE_MTLS_CERT_B64=$(_meta balance-mtls-cert-b64)
+BALANCE_MTLS_KEY_B64=$(_meta balance-mtls-key-b64)
+BALANCE_UNLINK_SECRET=$(_meta balance-unlink-secret)
 
 # 공인 IP → nip.io 도메인 계산
 PUBLIC_IP=$(curl -sf -H "Metadata-Flavor: Google" \
@@ -369,6 +372,23 @@ deploy_balance() {
   fi
   chown -R "$APP_USER":"$APP_USER" "$BALANCE_REPO_DIR"
 
+  echo "[mTLS] 인증서 복원..."
+  mkdir -p "$BALANCE_APP_DIR/certs"
+  if [ -n "$BALANCE_MTLS_CERT_B64" ]; then
+    echo "$BALANCE_MTLS_CERT_B64" | base64 -d > "$BALANCE_APP_DIR/certs/balance-cert.pem"
+    echo "  공개 인증서 복원 완료"
+  else
+    echo "  WARNING: balance-mtls-cert-b64 메타데이터가 없습니다."
+  fi
+  if [ -n "$BALANCE_MTLS_KEY_B64" ]; then
+    echo "$BALANCE_MTLS_KEY_B64" | base64 -d > "$BALANCE_APP_DIR/certs/balance-key.pem"
+    echo "  개인 키 복원 완료"
+  else
+    echo "  WARNING: balance-mtls-key-b64 메타데이터가 없습니다."
+  fi
+  chmod 600 "$BALANCE_APP_DIR/certs/"*
+  chown -R "$APP_USER":"$APP_USER" "$BALANCE_APP_DIR/certs"
+
   # DATABASE_URL 에 ?schema=balance → gdpworldcup DB 내 balance 스키마 사용
   echo "[.env] 생성..."
   cat > "$BALANCE_APP_DIR/.env" <<ENV
@@ -377,6 +397,9 @@ PORT=$BALANCE_PORT
 TZ=Asia/Seoul
 DATABASE_URL=postgresql://$DB_USER:$DB_PASSWORD@localhost:5432/$DB_NAME?schema=balance
 ADMIN_SECRET_KEY=$BALANCE_ADMIN_KEY
+AIT_MTLS_CERT_PATH=./certs/balance-cert.pem
+AIT_MTLS_KEY_PATH=./certs/balance-key.pem
+AIT_UNLINK_SECRET=$BALANCE_UNLINK_SECRET
 ENV
   chown "$APP_USER":"$APP_USER" "$BALANCE_APP_DIR/.env"
   chmod 600 "$BALANCE_APP_DIR/.env"

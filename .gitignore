@@ -11,3 +11,4 @@ prisma/dev.db-journal
 **/*.db
 **/*.db-journal
 .claude/
+**/certs/
