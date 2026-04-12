@@ -82,6 +82,8 @@ BALANCE_BRANCH=$(_meta balance-branch "main")
 BALANCE_MTLS_CERT_B64=$(_meta balance-mtls-cert-b64)
 BALANCE_MTLS_KEY_B64=$(_meta balance-mtls-key-b64)
 BALANCE_UNLINK_SECRET=$(_meta balance-unlink-secret)
+BALANCE_DECRYPT_KEY=$(_meta balance-decrypt-key "")
+BALANCE_DECRYPT_AAD=$(_meta balance-decrypt-aad "")
 
 # 공인 IP → nip.io 도메인 계산
 PUBLIC_IP=$(curl -sf -H "Metadata-Flavor: Google" \
@@ -400,6 +402,8 @@ ADMIN_SECRET_KEY=$BALANCE_ADMIN_KEY
 AIT_MTLS_CERT_PATH=./certs/balance-cert.pem
 AIT_MTLS_KEY_PATH=./certs/balance-key.pem
 AIT_UNLINK_SECRET=$BALANCE_UNLINK_SECRET
+AIT_DECRYPT_KEY=$BALANCE_DECRYPT_KEY
+AIT_DECRYPT_AAD=$BALANCE_DECRYPT_AAD
 ENV
   chown "$APP_USER":"$APP_USER" "$BALANCE_APP_DIR/.env"
   chmod 600 "$BALANCE_APP_DIR/.env"
