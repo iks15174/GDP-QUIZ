@@ -38,7 +38,16 @@ export default function QuizPage() {
   const [rewardEarned, setRewardEarned] = useState(false);
   const [milestoneEarned, setMilestoneEarned] = useState(false);
   const [allCountriesLearned, setAllCountriesLearned] = useState(false);
+  const [learnedCountryCount, setLearnedCountryCount] = useState<number | null>(null);
+  const [nextMilestoneRemaining, setNextMilestoneRemaining] = useState<number | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
+  const floatingFooterStyle: React.CSSProperties = {
+    position: 'sticky',
+    bottom: 0,
+    padding: '12px 20px 20px',
+    background: 'linear-gradient(180deg, rgba(247,248,250,0) 0%, rgba(247,248,250,0.92) 24%, #F7F8FA 48%)',
+    backdropFilter: 'blur(8px)',
+  };
 
   const { remaining, start, stop } = useTimer(QUIZ_SECONDS, () => setPhase('timeout'));
   const isMountedRef = useRef(true);
@@ -58,6 +67,8 @@ export default function QuizPage() {
       setRewardEarned(false);
       setMilestoneEarned(false);
       setAllCountriesLearned(false);
+      setLearnedCountryCount(null);
+      setNextMilestoneRemaining(null);
       const result = await api.getQuizBatch(userId!, 3, true);
       if (!isMountedRef.current) return;
       setBatch(result.quizzes);
@@ -96,6 +107,8 @@ export default function QuizPage() {
         if (!isMountedRef.current) return;
         if (result.milestoneEarned) setMilestoneEarned(true);
         if (result.allCountriesLearned) setAllCountriesLearned(true);
+        if (typeof result.learnedCountryCount === 'number') setLearnedCountryCount(result.learnedCountryCount);
+        if (typeof result.nextMilestoneRemaining === 'number') setNextMilestoneRemaining(result.nextMilestoneRemaining);
       })
       .catch(() => {});
   };
@@ -131,6 +144,21 @@ export default function QuizPage() {
 
   const handleWatchAd = (onSuccess: () => void) => {
     showAd(() => onSuccess(), () => {});
+  };
+
+  const renderLearningMilestoneHint = () => {
+    if (learnedCountryCount === null || nextMilestoneRemaining === null || allCountriesLearned) {
+      return null;
+    }
+
+    return (
+      <div style={{ backgroundColor: '#FFFFFF', borderRadius: 14, padding: '12px 14px', border: '1px solid #E5E7EB', display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: '#2563EB' }}>학습 리워드 진행 상황</span>
+        <span style={{ fontSize: 14, color: '#0F172A', lineHeight: 1.5 }}>
+          지금까지 <strong>{learnedCountryCount}개 나라</strong>를 학습했어요. 다음 1원까지 <strong>{nextMilestoneRemaining}개 나라</strong> 더 보면 돼요.
+        </span>
+      </div>
+    );
   };
 
   const renderDetailCard = (c: AnswerCountry, isWinner: boolean) => (
@@ -244,7 +272,7 @@ export default function QuizPage() {
         </div>
       )}
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 112px', display: 'flex', flexDirection: 'column', gap: 14 }}>
 
         {phase === 'quiz' && <Timer remaining={remaining} total={QUIZ_SECONDS} />}
 
@@ -278,6 +306,7 @@ export default function QuizPage() {
             <div style={{ alignSelf: 'center' }}>
               <StreakBar streak={streak} />
             </div>
+            {renderLearningMilestoneHint()}
             {renderAnswerDetail()}
           </div>
         )}
@@ -338,7 +367,7 @@ export default function QuizPage() {
 
       {/* 하단 고정 액션 버튼 */}
       {footerButton && (
-        <div style={{ padding: '12px 20px 20px', borderTop: '1px solid #F3F4F6', backgroundColor: '#F7F8FA' }}>
+        <div style={floatingFooterStyle}>
           {footerButton}
         </div>
       )}

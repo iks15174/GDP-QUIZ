@@ -267,6 +267,8 @@ export const quizRoutes: FastifyPluginAsync = async (fastify) => {
 
     let rewardEarned = false;
     let milestoneEarned = false;
+    let learnedCountryCount = 0;
+    let nextMilestoneRemaining = 10;
 
     // streak 3 달성 → 토스 포인트 지급 + 초기화 + 다음 도전 준비
     if (isCorrect && streak.streak >= 3) {
@@ -314,6 +316,9 @@ export const quizRoutes: FastifyPluginAsync = async (fastify) => {
       ]);
 
       const learnedAfter = await prisma.userCountryView.count({ where: { userId } });
+      learnedCountryCount = learnedAfter;
+      const remainder = learnedAfter % 10;
+      nextMilestoneRemaining = remainder === 0 ? 10 : 10 - remainder;
 
       if (totalCountries > 0 && learnedAfter >= totalCountries) {
         // 모든 나라 학습 완료 (마지막 n개 포함) → 1원 + 초기화
@@ -324,6 +329,8 @@ export const quizRoutes: FastifyPluginAsync = async (fastify) => {
           fastify.log.error({ err }, '전국 학습 완료 리워드 지급 실패');
         }
         await prisma.userCountryView.deleteMany({ where: { userId } });
+        learnedCountryCount = 0;
+        nextMilestoneRemaining = 10;
       } else if (Math.floor(learnedAfter / 10) > Math.floor(learnedBefore / 10)) {
         // 10개 단위 마일스톤 달성 → 1원 (리셋 없음)
         milestoneEarned = true;
@@ -343,6 +350,8 @@ export const quizRoutes: FastifyPluginAsync = async (fastify) => {
       rewardEarned,
       milestoneEarned,
       allCountriesLearned,
+      learnedCountryCount,
+      nextMilestoneRemaining,
       streak: {
         current: currentStreak,
         totalWins: rewardEarned ? streak.totalWins + 1 : streak.totalWins,

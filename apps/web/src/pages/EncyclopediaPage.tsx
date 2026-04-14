@@ -57,6 +57,13 @@ export default function EncyclopediaPage() {
   const [totalCountries, setTotalCountries] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const floatingFooterStyle: React.CSSProperties = {
+    position: 'sticky',
+    bottom: 0,
+    padding: '12px 20px 20px',
+    background: 'linear-gradient(180deg, rgba(247,248,250,0) 0%, rgba(247,248,250,0.92) 24%, #F7F8FA 48%)',
+    backdropFilter: 'blur(8px)',
+  };
 
   useEffect(() => {
     api
@@ -72,7 +79,7 @@ export default function EncyclopediaPage() {
   return (
     <div style={{ minHeight: '100%', backgroundColor: '#F7F8FA', display: 'flex', flexDirection: 'column' }}>
       <BannerAd />
-      <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 112px', display: 'flex', flexDirection: 'column', gap: 16 }}>
 
         <div style={{ textAlign: 'center' }}>
           <span style={{ fontSize: 17, fontWeight: 700, color: '#0F172A', letterSpacing: -0.3 }}>내 학습 기록</span>
@@ -125,10 +132,10 @@ export default function EncyclopediaPage() {
 
       </div>
 
-      <div style={{ padding: '12px 20px 20px', borderTop: '1px solid #F3F4F6', backgroundColor: '#F7F8FA' }}>
+      <div style={floatingFooterStyle}>
         <button
           onClick={() => navigate('/quiz')}
-          style={{ width: '100%', backgroundColor: '#2563EB', paddingTop: 16, paddingBottom: 16, borderRadius: 14, fontSize: 16, fontWeight: 700, color: '#FFFFFF', letterSpacing: -0.3 }}
+          style={{ width: '100%', backgroundColor: '#2563EB', paddingTop: 16, paddingBottom: 16, borderRadius: 14, fontSize: 16, fontWeight: 700, color: '#FFFFFF', letterSpacing: -0.3, boxShadow: '0 10px 24px rgba(37, 99, 235, 0.22)' }}
         >
           퀴즈 도전하기
         </button>

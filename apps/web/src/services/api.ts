@@ -44,6 +44,8 @@ export interface AnswerResponse {
   rewardEarned: boolean;
   milestoneEarned?: boolean;
   allCountriesLearned?: boolean;
+  learnedCountryCount?: number;
+  nextMilestoneRemaining?: number;
   streak: { current: number; totalWins: number };
   countries: [AnswerCountry, AnswerCountry];
 }
