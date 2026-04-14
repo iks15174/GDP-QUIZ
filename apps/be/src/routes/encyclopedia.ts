@@ -16,8 +16,14 @@ export const encyclopediaRoutes: FastifyPluginAsync = async (fastify) => {
       prisma.country.count(),
     ]);
 
+    const learnedCountryCount = views.length;
+    const remainder = learnedCountryCount % 10;
+    const nextMilestoneRemaining = learnedCountryCount === 0 ? 10 : remainder === 0 ? 10 : 10 - remainder;
+
     return {
       totalCountries,
+      learnedCountryCount,
+      nextMilestoneRemaining,
       countries: views.map((v) => ({
         code: v.country.code,
         nameKo: v.country.nameKo,

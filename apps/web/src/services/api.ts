@@ -112,7 +112,7 @@ export const api = {
     ),
 
   getEncyclopedia: (userId: string) =>
-    request<{ countries: EncyclopediaCountry[]; totalCountries: number }>(
+    request<{ countries: EncyclopediaCountry[]; totalCountries: number; learnedCountryCount: number; nextMilestoneRemaining: number }>(
       `/api/encyclopedia?userId=${encodeURIComponent(userId)}`
     ),
 

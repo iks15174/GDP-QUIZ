@@ -55,6 +55,8 @@ export default function EncyclopediaPage() {
   const { userKey: userId } = useAuth();
   const [countries, setCountries] = useState<EncyclopediaCountry[]>([]);
   const [totalCountries, setTotalCountries] = useState(0);
+  const [learnedCountryCount, setLearnedCountryCount] = useState(0);
+  const [nextMilestoneRemaining, setNextMilestoneRemaining] = useState(10);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const floatingFooterStyle: React.CSSProperties = {
@@ -71,6 +73,8 @@ export default function EncyclopediaPage() {
       .then((res) => {
         setCountries(res.countries);
         setTotalCountries(res.totalCountries);
+        setLearnedCountryCount(res.learnedCountryCount);
+        setNextMilestoneRemaining(res.nextMilestoneRemaining);
       })
       .catch(() => setError('데이터를 불러오지 못했어요.'))
       .finally(() => setLoading(false));
@@ -117,6 +121,12 @@ export default function EncyclopediaPage() {
             </div>
             <div style={{ height: 4, backgroundColor: '#E5E7EB', borderRadius: 2, overflow: 'hidden' }}>
               <div style={{ height: '100%', width: `${Math.min((countries.length / totalCountries) * 100, 100)}%`, backgroundColor: '#2563EB', borderRadius: 2 }} />
+            </div>
+            <div style={{ backgroundColor: '#F8FAFF', borderRadius: 12, padding: '12px 14px', border: '1px solid #DBEAFE', display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: '#2563EB' }}>학습 리워드 진행 상황</span>
+              <span style={{ fontSize: 14, color: '#0F172A', lineHeight: 1.5 }}>
+                지금까지 <strong>{learnedCountryCount}개 나라</strong>를 학습했어요. 다음 1원까지 <strong>{nextMilestoneRemaining}개 나라</strong> 더 보면 돼요.
+              </span>
             </div>
           </div>
         )}
