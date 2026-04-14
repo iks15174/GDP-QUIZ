@@ -226,6 +226,14 @@ export default function QuizPage() {
   return (
     <div style={{ minHeight: '100%', backgroundColor: '#F7F8FA', display: 'flex', flexDirection: 'column' }}>
       <BannerAd />
+
+      {/* 전국 학습 완료 배너 — phase 무관하게 항상 노출 */}
+      {allCountriesLearned && (
+        <div style={{ backgroundColor: '#F0FDF4', padding: '10px 20px', borderBottom: '1px solid #86EFAC', textAlign: 'center' }}>
+          <span style={{ fontSize: 14, fontWeight: 700, color: '#15803D' }}>🌍 모든 나라 학습 완료! 1원이 지급됐어요</span>
+        </div>
+      )}
+
       <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
 
         {phase === 'quiz' && <Timer remaining={remaining} total={QUIZ_SECONDS} />}
@@ -271,11 +279,6 @@ export default function QuizPage() {
                 <StreakBar streak={streak} />
               )}
             </div>
-            {allCountriesLearned && (
-              <div style={{ backgroundColor: '#F0FDF4', padding: '10px 16px', borderRadius: 12, border: '1px solid #86EFAC', textAlign: 'center' }}>
-                <span style={{ fontSize: 14, fontWeight: 700, color: '#15803D' }}>🌍 모든 나라 학습 완료! 50원이 지급됐어요</span>
-              </div>
-            )}
             {renderAnswerDetail()}
           </div>
         )}

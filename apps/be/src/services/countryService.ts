@@ -120,10 +120,12 @@ function parseIndustries(country: { major_industry: string | null; country_iso_a
 const BUCKET_COUNT = 8;
 
 type CountryRow = Awaited<ReturnType<typeof prisma.country.findMany>>[number];
+type CountryPair = { country1: CountryRow; country2: CountryRow };
 
 /** 하위 1/3 vs 상위 1/3 — GDP 차이가 커서 쉬운 문제 */
-export function pickEasyPair(all: CountryRow[]) {
-  const third = Math.floor(all.length / 3);
+export function pickEasyPair(all: CountryRow[]): CountryPair {
+  if (all.length < 3) return pickSimilarPair(all); // 방어: 국가 수 부족 시 fallback
+  const third = Math.max(1, Math.floor(all.length / 3));
   const bottom = all.slice(0, third);
   const top = all.slice(all.length - third);
   return {
@@ -133,7 +135,7 @@ export function pickEasyPair(all: CountryRow[]) {
 }
 
 /** GDP 유사 버킷 내 2개 선택 — 난이도 있는 문제 */
-export function pickSimilarPair(all: CountryRow[]) {
+export function pickSimilarPair(all: CountryRow[]): CountryPair {
   const bucketSize = Math.ceil(all.length / BUCKET_COUNT);
   const buckets: CountryRow[][] = [];
   for (let i = 0; i < all.length; i += bucketSize) {

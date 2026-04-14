@@ -281,9 +281,24 @@ export const quizRoutes: FastifyPluginAsync = async (fastify) => {
       }
     }
 
-    // 정답인 경우 두 나라 모두 백과사전에 기록 + 전국 학습 완료 체크
+    // 두 나라 상세 정보 + 전체 국가 수 병렬 조회 (totalCountries는 백과사전 체크에도 재사용)
+    const [country1, country2, totalCountries] = await Promise.all([
+      prisma.country.findUnique({ where: { code: session.country1Code } }),
+      prisma.country.findUnique({ where: { code: session.country2Code } }),
+      prisma.country.count(),
+    ]);
+
+    const [c1Rank, c2Rank] = await Promise.all([
+      prisma.country.count({ where: { gdpPerCapita: { gt: country1!.gdpPerCapita } } }),
+      prisma.country.count({ where: { gdpPerCapita: { gt: country2!.gdpPerCapita } } }),
+    ]);
+
+    // 정답인 경우 두 나라 백과사전 기록 + 10개 단위 마일스톤 보상
     let allCountriesLearned = false;
     if (isCorrect) {
+      // upsert 전에 현재 학습 수 확보 (마일스톤 계산용)
+      const learnedBefore = await prisma.userCountryView.count({ where: { userId } });
+
       await Promise.all([
         prisma.userCountryView.upsert({
           where: { userId_countryCode: { userId, countryCode: session.country1Code } },
@@ -297,34 +312,26 @@ export const quizRoutes: FastifyPluginAsync = async (fastify) => {
         }),
       ]);
 
-      const [learnedCount, totalCount] = await Promise.all([
-        prisma.userCountryView.count({ where: { userId } }),
-        prisma.country.count(),
-      ]);
+      const learnedAfter = await prisma.userCountryView.count({ where: { userId } });
 
-      if (totalCount > 0 && learnedCount >= totalCount) {
+      if (totalCountries > 0 && learnedAfter >= totalCountries) {
+        // 모든 나라 학습 완료 (마지막 n개 포함) → 1원 + 초기화
         allCountriesLearned = true;
         try {
-          await grantPromotionReward(userId, 50);
+          await grantPromotionReward(userId, 1);
         } catch (err) {
-          fastify.log.error({ err }, '전국 학습 리워드(50원) 지급 실패');
+          fastify.log.error({ err }, '전국 학습 완료 리워드 지급 실패');
         }
         await prisma.userCountryView.deleteMany({ where: { userId } });
+      } else if (Math.floor(learnedAfter / 10) > Math.floor(learnedBefore / 10)) {
+        // 10개 단위 마일스톤 달성 → 1원 (리셋 없음)
+        try {
+          await grantPromotionReward(userId, 1);
+        } catch (err) {
+          fastify.log.error({ err }, '학습 마일스톤 리워드 지급 실패');
+        }
       }
     }
-
-    // 두 나라 상세 정보 조회 (정답 공개용)
-    const [country1, country2] = await Promise.all([
-      prisma.country.findUnique({ where: { code: session.country1Code } }),
-      prisma.country.findUnique({ where: { code: session.country2Code } }),
-    ]);
-
-    // rank와 총 개수 조회
-    const [totalCountries, c1Rank, c2Rank] = await Promise.all([
-      prisma.country.count(),
-      prisma.country.count({ where: { gdpPerCapita: { gt: country1!.gdpPerCapita } } }),
-      prisma.country.count({ where: { gdpPerCapita: { gt: country2!.gdpPerCapita } } }),
-    ]);
 
     const currentStreak = rewardEarned ? 0 : streak.streak;
 

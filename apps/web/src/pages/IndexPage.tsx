@@ -71,8 +71,8 @@ export default function IndexPage() {
         <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <span style={{ fontSize: 22 }}>🌍</span>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: '#0F172A' }}>모든 나라 학습 완료 → 50원 지급</div>
-            <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>퀴즈를 풀면 학습 기록에 자동 수집</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#0F172A' }}>나라 10개 학습마다 1원 지급</div>
+            <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>마지막 남은 나라도 다 채우면 1원 지급</div>
           </div>
         </div>
       </div>
