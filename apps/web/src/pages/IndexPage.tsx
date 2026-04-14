@@ -24,7 +24,6 @@ export default function IndexPage() {
     setLoginLoading(true);
     try {
       await login();
-      // 로그인 후 홈에 머물며 퀴즈 시작 버튼을 통해 정상적으로 시작
     } finally {
       setLoginLoading(false);
     }
@@ -37,7 +36,7 @@ export default function IndexPage() {
     } else {
       showAd(
         () => navigate('/quiz'),
-        () => { /* 광고 미완료 */ }
+        () => {}
       );
     }
   };
@@ -45,41 +44,40 @@ export default function IndexPage() {
   const remaining = dailyStatus ? dailyStatus.maxAttempts - dailyStatus.attemptsToday : null;
 
   return (
-    <div style={{ minHeight: '100%', backgroundColor: '#F7F8FA', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 20px', gap: 24 }}>
+    <div style={{ minHeight: '100%', backgroundColor: '#F7F8FA', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '0 20px', gap: 20 }}>
 
       <BannerAd />
 
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-        <h1 style={{ fontSize: 40, fontWeight: 900, color: '#0F172A', letterSpacing: -1.5, textAlign: 'center', lineHeight: 1.2 }}>
+      {/* 타이틀 */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+        <h1 style={{ fontSize: 38, fontWeight: 900, color: '#0F172A', letterSpacing: -1.5, textAlign: 'center', lineHeight: 1.2 }}>
           GDP{'\n'}스피드 퀴즈
         </h1>
-        <p style={{ fontSize: 15, color: '#9CA3AF', textAlign: 'center', lineHeight: 1.5 }}>
+        <p style={{ fontSize: 14, color: '#9CA3AF', textAlign: 'center', lineHeight: 1.5 }}>
           두 나라 중 1인당 GDP가 더 높은 나라를 맞춰보세요
         </p>
       </div>
 
-      <div style={{ backgroundColor: '#FFFFFF', borderRadius: 20, padding: '6px 20px', border: '1px solid #E5E7EB' }}>
-        {[
-          { num: '1', text: '5초 안에 GDP가 더 높은 나라를 고르세요', color: '#2563EB' },
-          { num: '2', text: '틀리거나 시간이 초과되면 광고를 보고 이어서 도전할 수 있어요', color: '#2563EB' },
-          { num: '3', text: null, color: '#D97706' },
-        ].map((rule, i) => (
-          <div key={i}>
-            {i > 0 && <div style={{ height: 1, backgroundColor: '#F3F4F6', margin: '0 -20px' }} />}
-            <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'flex-start', gap: 14, paddingTop: 16, paddingBottom: 16 }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: rule.color, width: 18, lineHeight: '21px' }}>{rule.num}</span>
-              {rule.text ? (
-                <span style={{ flex: 1, fontSize: 14, color: '#4B5563', lineHeight: 1.5 }}>{rule.text}</span>
-              ) : (
-                <span style={{ flex: 1, fontSize: 14, color: '#4B5563', lineHeight: 1.5 }}>
-                  3번 연속 맞추면 <strong style={{ color: '#0F172A' }}>1원 지급</strong>
-                </span>
-              )}
-            </div>
+      {/* 리워드 카드 */}
+      <div style={{ backgroundColor: '#FFFFFF', borderRadius: 20, padding: '16px 20px', border: '1px solid #E5E7EB', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 22 }}>🏆</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#0F172A' }}>3연속 정답 → 1원 지급</div>
+            <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>틀리면 광고 보고 이어서 도전</div>
           </div>
-        ))}
+        </div>
+        <div style={{ height: 1, backgroundColor: '#F3F4F6' }} />
+        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 22 }}>🌍</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#0F172A' }}>모든 나라 학습 완료 → 50원 지급</div>
+            <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>퀴즈를 풀면 학습 기록에 자동 수집</div>
+          </div>
+        </div>
       </div>
 
+      {/* 버튼 영역 */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'center' }}>
         {isLoggedIn && remaining !== null && !dailyStatus?.limitReached && (
           <span style={{ fontSize: 13, color: '#6B7280', fontWeight: 500 }}>

@@ -117,43 +117,49 @@ function parseIndustries(country: { major_industry: string | null; country_iso_a
   return INDUSTRY_MAP[alpha2] ?? ['정보 없음'];
 }
 
-/**
- * GDP 기준으로 전체 국가를 BUCKET_COUNT개 구간으로 나눈 뒤,
- * 같은 구간에서 2개를 뽑아 반환. 비슷한 GDP 나라끼리 대결하게 됨.
- */
 const BUCKET_COUNT = 8;
 
-export async function getTwoRandomCountries() {
-  let count = await prisma.country.count();
+type CountryRow = Awaited<ReturnType<typeof prisma.country.findMany>>[number];
 
-  if (count < 20) {
-    await seedCountriesFromPublicApi();
-    count = await prisma.country.count();
-  }
+/** 하위 1/3 vs 상위 1/3 — GDP 차이가 커서 쉬운 문제 */
+export function pickEasyPair(all: CountryRow[]) {
+  const third = Math.floor(all.length / 3);
+  const bottom = all.slice(0, third);
+  const top = all.slice(all.length - third);
+  return {
+    country1: bottom[Math.floor(Math.random() * bottom.length)]!,
+    country2: top[Math.floor(Math.random() * top.length)]!,
+  };
+}
 
-  // GDP 오름차순 정렬
-  const all = await prisma.country.findMany({ orderBy: { gdpPerCapita: 'asc' } });
-  if (all.length < 2) return null;
-
-  // 균등 버킷 분할
+/** GDP 유사 버킷 내 2개 선택 — 난이도 있는 문제 */
+export function pickSimilarPair(all: CountryRow[]) {
   const bucketSize = Math.ceil(all.length / BUCKET_COUNT);
-  const buckets: typeof all[] = [];
+  const buckets: CountryRow[][] = [];
   for (let i = 0; i < all.length; i += bucketSize) {
     buckets.push(all.slice(i, i + bucketSize));
   }
-
-  // 2개 이상인 버킷만 추리고, 랜덤 선택
   const eligible = buckets.filter((b) => b.length >= 2);
-  if (eligible.length === 0) return null;
+  if (eligible.length === 0) return pickEasyPair(all);
 
   const bucket = eligible[Math.floor(Math.random() * eligible.length)]!;
-
-  // 버킷 내에서 2개 랜덤 선택 (중복 없이)
   const idx1 = Math.floor(Math.random() * bucket.length);
   let idx2 = Math.floor(Math.random() * (bucket.length - 1));
   if (idx2 >= idx1) idx2++;
-
   return { country1: bucket[idx1]!, country2: bucket[idx2]! };
+}
+
+/** 전체 국가를 GDP 오름차순으로 로드 (필요 시 공공 API 시드) */
+export async function getAllCountriesSorted(): Promise<CountryRow[]> {
+  const count = await prisma.country.count();
+  if (count < 20) await seedCountriesFromPublicApi();
+  return prisma.country.findMany({ orderBy: { gdpPerCapita: 'asc' } });
+}
+
+export async function getTwoRandomCountries() {
+  const all = await getAllCountriesSorted();
+  if (all.length < 2) return null;
+  return pickSimilarPair(all);
 }
 
 /** 공공 API에서 전체 국가 GDP 데이터를 받아 DB에 저장 */

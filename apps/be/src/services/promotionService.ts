@@ -51,9 +51,9 @@ async function getPromotionKey(userKey: string): Promise<string> {
   return data.success.key;
 }
 
-export async function grantPromotionReward(userKey: string): Promise<void> {
+export async function grantPromotionReward(userKey: string, overrideAmount?: number): Promise<void> {
   const promotionCode = process.env.AIT_PROMOTION_CODE;
-  const amount = Number(process.env.AIT_PROMOTION_AMOUNT ?? 1);
+  const amount = overrideAmount ?? Number(process.env.AIT_PROMOTION_AMOUNT ?? 1);
 
   if (!promotionCode) {
     throw new Error('AIT_PROMOTION_CODE가 설정되지 않았습니다.');

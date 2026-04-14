@@ -2,7 +2,7 @@ import { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
 import { prisma } from '../plugins/prisma.js';
-import { getTwoRandomCountries } from '../services/countryService.js';
+import { getAllCountriesSorted, pickEasyPair, pickSimilarPair } from '../services/countryService.js';
 import { grantPromotionReward } from '../services/promotionService.js';
 
 const answerSchema = z.object({
@@ -30,6 +30,86 @@ export const quizRoutes: FastifyPluginAsync = async (fastify) => {
     });
 
     return { attemptsToday, maxAttempts: MAX_DAILY_ATTEMPTS, limitReached: attemptsToday >= MAX_DAILY_ATTEMPTS };
+  });
+
+  // GET /api/quiz/batch - 한 번에 N개 문제 로드 (빠른 UX, 정답 포함)
+  fastify.get('/batch', async (request, reply) => {
+    const { userId, count, fresh } = request.query as { userId?: string; count?: string; fresh?: string };
+    const batchSize = Math.min(Number(count) || 3, 10);
+    const isFresh = fresh === 'true';
+
+    if (!userId) return reply.status(400).send({ error: 'userId가 필요합니다.' });
+
+    let attemptsToday = 0;
+
+    if (isFresh) {
+      attemptsToday = await prisma.quizSession.count({
+        where: { userId, isNewAttempt: true, createdAt: { gte: startOfToday() } },
+      });
+      if (attemptsToday >= MAX_DAILY_ATTEMPTS) {
+        return reply.status(429).send({ error: 'DAILY_LIMIT_REACHED', attemptsToday, maxAttempts: MAX_DAILY_ATTEMPTS });
+      }
+      const newAttemptId = randomUUID();
+      await prisma.userStreak.upsert({
+        where: { userId },
+        create: { userId, streak: 0, totalWins: 0, currentAttemptId: newAttemptId },
+        update: { streak: 0, currentAttemptId: newAttemptId },
+      });
+    }
+
+    const isFirstOfDay = isFresh && attemptsToday === 0;
+    const allCountries = await getAllCountriesSorted();
+    if (allCountries.length < 2) {
+      return reply.status(503).send({ error: '국가 데이터를 불러올 수 없습니다.' });
+    }
+
+    const totalCount = allCountries.length;
+    const getRank = (gdp: number) => allCountries.filter((c) => c.gdpPerCapita > gdp).length + 1;
+
+    const quizzes = [];
+    const usedPairs = new Set<string>();
+
+    for (let i = 0; i < batchSize; i++) {
+      let pair = i === 0 && isFirstOfDay ? pickEasyPair(allCountries) : pickSimilarPair(allCountries);
+      let tries = 0;
+      while (usedPairs.has(`${pair.country1.code}|${pair.country2.code}`) && tries < 20) {
+        pair = i === 0 && isFirstOfDay ? pickEasyPair(allCountries) : pickSimilarPair(allCountries);
+        tries++;
+      }
+      usedPairs.add(`${pair.country1.code}|${pair.country2.code}`);
+      usedPairs.add(`${pair.country2.code}|${pair.country1.code}`);
+
+      const { country1, country2 } = pair;
+      const correctCode = country1.gdpPerCapita >= country2.gdpPerCapita ? country1.code : country2.code;
+
+      const session = await prisma.quizSession.create({
+        data: { userId, country1Code: country1.code, country2Code: country2.code, correctCode, isNewAttempt: i === 0 && isFresh },
+      });
+
+      const toDetail = (c: typeof country1) => ({
+        code: c.code, nameKo: c.nameKo, nameEn: c.nameEn, flagEmoji: c.flagEmoji,
+        gdpPerCapita: c.gdpPerCapita,
+        mainIndustries: JSON.parse(c.mainIndustries) as string[],
+        isCorrect: c.code === correctCode,
+        gdpRank: getRank(c.gdpPerCapita),
+        totalCountries: totalCount,
+        continent: c.continent ?? null,
+        mainResource: c.mainResource ?? null,
+      });
+
+      quizzes.push({
+        quizId: session.id,
+        countries: [
+          { code: country1.code, nameKo: country1.nameKo, nameEn: country1.nameEn, flagEmoji: country1.flagEmoji },
+          { code: country2.code, nameKo: country2.nameKo, nameEn: country2.nameEn, flagEmoji: country2.flagEmoji },
+        ],
+        correctCode,
+        countryDetails: [toDetail(country1), toDetail(country2)],
+      });
+    }
+
+    const userStreak = await prisma.userStreak.findUnique({ where: { userId } });
+    return { quizzes, currentStreak: userStreak?.streak ?? 0 };
   });
 
   // GET /api/quiz/retry?previousQuizId=xxx&userId=yyy - 같은 문제로 재도전 (새 도전 카운트 미소모)
@@ -98,12 +178,11 @@ export const quizRoutes: FastifyPluginAsync = async (fastify) => {
       }
     }
 
-    const result = await getTwoRandomCountries();
-    if (!result) {
+    const allCountries = await getAllCountriesSorted();
+    if (allCountries.length < 2) {
       return reply.status(503).send({ error: '국가 데이터를 불러올 수 없습니다.' });
     }
-
-    const { country1, country2 } = result;
+    const { country1, country2 } = pickSimilarPair(allCountries);
     const correctCode =
       country1.gdpPerCapita >= country2.gdpPerCapita ? country1.code : country2.code;
 
@@ -202,7 +281,8 @@ export const quizRoutes: FastifyPluginAsync = async (fastify) => {
       }
     }
 
-    // 정답인 경우 두 나라 모두 백과사전에 기록
+    // 정답인 경우 두 나라 모두 백과사전에 기록 + 전국 학습 완료 체크
+    let allCountriesLearned = false;
     if (isCorrect) {
       await Promise.all([
         prisma.userCountryView.upsert({
@@ -216,6 +296,21 @@ export const quizRoutes: FastifyPluginAsync = async (fastify) => {
           update: { viewedAt: new Date() },
         }),
       ]);
+
+      const [learnedCount, totalCount] = await Promise.all([
+        prisma.userCountryView.count({ where: { userId } }),
+        prisma.country.count(),
+      ]);
+
+      if (totalCount > 0 && learnedCount >= totalCount) {
+        allCountriesLearned = true;
+        try {
+          await grantPromotionReward(userId, 50);
+        } catch (err) {
+          fastify.log.error({ err }, '전국 학습 리워드(50원) 지급 실패');
+        }
+        await prisma.userCountryView.deleteMany({ where: { userId } });
+      }
     }
 
     // 두 나라 상세 정보 조회 (정답 공개용)
@@ -237,6 +332,7 @@ export const quizRoutes: FastifyPluginAsync = async (fastify) => {
       isCorrect,
       correctCode: session.correctCode,
       rewardEarned,
+      allCountriesLearned,
       streak: {
         current: currentStreak,
         totalWins: rewardEarned ? streak.totalWins + 1 : streak.totalWins,

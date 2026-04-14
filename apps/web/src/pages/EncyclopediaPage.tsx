@@ -4,7 +4,7 @@ import { api, EncyclopediaCountry } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
 import { BannerAd } from '../components/BannerAd';
 
-const KRW_RATE = 1380;
+const KRW_RATE = 1450;
 
 function formatGDP(gdp: number): string {
   const krw = Math.round(gdp * KRW_RATE);
@@ -71,6 +71,7 @@ export default function EncyclopediaPage() {
 
   return (
     <div style={{ minHeight: '100%', backgroundColor: '#F7F8FA', display: 'flex', flexDirection: 'column' }}>
+      <BannerAd />
       <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
 
         <div style={{ textAlign: 'center' }}>
@@ -124,14 +125,12 @@ export default function EncyclopediaPage() {
 
       </div>
 
-      <BannerAd />
-      {/* 하단 고정 재도전 버튼 */}
       <div style={{ padding: '12px 20px 20px', borderTop: '1px solid #F3F4F6', backgroundColor: '#F7F8FA' }}>
         <button
           onClick={() => navigate('/quiz')}
           style={{ width: '100%', backgroundColor: '#2563EB', paddingTop: 16, paddingBottom: 16, borderRadius: 14, fontSize: 16, fontWeight: 700, color: '#FFFFFF', letterSpacing: -0.3 }}
         >
-          퀴즈 다시 도전하고 1원 받기
+          퀴즈 도전하기
         </button>
       </div>
     </div>

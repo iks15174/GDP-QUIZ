@@ -42,8 +42,21 @@ export interface AnswerResponse {
   isCorrect: boolean;
   correctCode: string;
   rewardEarned: boolean;
+  allCountriesLearned?: boolean;
   streak: { current: number; totalWins: number };
   countries: [AnswerCountry, AnswerCountry];
+}
+
+export interface BatchQuizItem {
+  quizId: string;
+  countries: [QuizCountry, QuizCountry];
+  correctCode: string;
+  countryDetails: [AnswerCountry, AnswerCountry];
+}
+
+export interface BatchQuizResponse {
+  quizzes: BatchQuizItem[];
+  currentStreak: number;
 }
 
 export interface EncyclopediaCountry {
@@ -70,10 +83,10 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  getQuiz: async (userId: string, fresh = false): Promise<QuizResponse> => {
-    const params = new URLSearchParams({ userId });
+  getQuizBatch: async (userId: string, count = 3, fresh = false): Promise<BatchQuizResponse> => {
+    const params = new URLSearchParams({ userId, count: String(count) });
     if (fresh) params.set('fresh', 'true');
-    const res = await fetch(`${BASE_URL}/api/quiz?${params.toString()}`, {
+    const res = await fetch(`${BASE_URL}/api/quiz/batch?${params.toString()}`, {
       headers: { 'Content-Type': 'application/json' },
     });
     if (res.status === 429) {
@@ -81,7 +94,7 @@ export const api = {
       throw new DailyLimitError(data.attemptsToday, data.maxAttempts);
     }
     if (!res.ok) throw new Error(`API 오류: ${res.status}`);
-    return res.json() as Promise<QuizResponse>;
+    return res.json() as Promise<BatchQuizResponse>;
   },
 
   submitAnswer: (body: { quizId: string; userId: string; selectedCode: string }) =>
