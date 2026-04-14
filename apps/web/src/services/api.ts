@@ -42,6 +42,7 @@ export interface AnswerResponse {
   isCorrect: boolean;
   correctCode: string;
   rewardEarned: boolean;
+  milestoneEarned?: boolean;
   allCountriesLearned?: boolean;
   streak: { current: number; totalWins: number };
   countries: [AnswerCountry, AnswerCountry];

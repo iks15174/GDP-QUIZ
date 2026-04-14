@@ -36,6 +36,7 @@ export default function QuizPage() {
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
   const [streak, setStreak] = useState(0);
   const [rewardEarned, setRewardEarned] = useState(false);
+  const [milestoneEarned, setMilestoneEarned] = useState(false);
   const [allCountriesLearned, setAllCountriesLearned] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -55,6 +56,7 @@ export default function QuizPage() {
       setSelectedCode(null);
       setBatchIndex(0);
       setRewardEarned(false);
+      setMilestoneEarned(false);
       setAllCountriesLearned(false);
       const result = await api.getQuizBatch(userId!, 3, true);
       if (!isMountedRef.current) return;
@@ -91,7 +93,9 @@ export default function QuizPage() {
     // 백그라운드로 서버에 정답 제출 (streak DB 동기화 + 전국 학습 체크)
     api.submitAnswer({ quizId: currentQuiz.quizId, userId: userId!, selectedCode: code })
       .then(result => {
-        if (isMountedRef.current && result.allCountriesLearned) setAllCountriesLearned(true);
+        if (!isMountedRef.current) return;
+        if (result.milestoneEarned) setMilestoneEarned(true);
+        if (result.allCountriesLearned) setAllCountriesLearned(true);
       })
       .catch(() => {});
   };
@@ -182,7 +186,7 @@ export default function QuizPage() {
     const [c1, c2] = currentQuiz.countries;
     let c1Result: 'correct' | 'wrong' | null = null;
     let c2Result: 'correct' | 'wrong' | null = null;
-    if (phase === 'correct' || phase === 'wrong') {
+    if (phase === 'correct' || phase === 'wrong' || phase === 'timeout') {
       c1Result = c1.code === currentQuiz.correctCode ? 'correct' : 'wrong';
       c2Result = c2.code === currentQuiz.correctCode ? 'correct' : 'wrong';
     }
@@ -234,6 +238,12 @@ export default function QuizPage() {
         </div>
       )}
 
+      {milestoneEarned && (
+        <div style={{ backgroundColor: '#FFFBEB', padding: '10px 20px', borderBottom: '1px solid #FDE68A', textAlign: 'center' }}>
+          <span style={{ fontSize: 14, fontWeight: 700, color: '#B45309' }}>10개 학습 마일스톤 달성! 1원이 지급됐어요</span>
+        </div>
+      )}
+
       <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
 
         {phase === 'quiz' && <Timer remaining={remaining} total={QUIZ_SECONDS} />}
@@ -256,13 +266,19 @@ export default function QuizPage() {
         )}
 
         {/* 국가 카드 */}
-        {(phase === 'quiz' || phase === 'correct' || phase === 'wrong') && renderCountries()}
+        {(phase === 'quiz' || phase === 'correct' || phase === 'wrong' || phase === 'timeout') && renderCountries()}
 
         {/* 시간 초과 */}
         {phase === 'timeout' && (
-          <div style={{ backgroundColor: '#FEF2F2', borderRadius: 16, paddingTop: 28, paddingBottom: 28, paddingLeft: 20, paddingRight: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, border: '1px solid #FECACA' }}>
-            <span style={{ fontSize: 22, fontWeight: 800, color: '#DC2626', letterSpacing: -0.5 }}>시간 초과</span>
-            <span style={{ fontSize: 14, color: '#9CA3AF', textAlign: 'center', lineHeight: 1.5 }}>아쉽게도 시간이 끝났어요{'\n'}광고를 보고 다시 도전해보세요</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ backgroundColor: '#FEF2F2', borderRadius: 16, paddingTop: 28, paddingBottom: 28, paddingLeft: 20, paddingRight: 20, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, border: '1px solid #FECACA' }}>
+              <span style={{ fontSize: 22, fontWeight: 800, color: '#DC2626', letterSpacing: -0.5 }}>시간 초과</span>
+              <span style={{ fontSize: 14, color: '#9CA3AF', textAlign: 'center', lineHeight: 1.5 }}>아쉽게도 시간이 끝났어요{'\n'}정답을 확인하고 광고를 보면 다시 도전할 수 있어요</span>
+            </div>
+            <div style={{ alignSelf: 'center' }}>
+              <StreakBar streak={streak} />
+            </div>
+            {renderAnswerDetail()}
           </div>
         )}
 
@@ -287,6 +303,9 @@ export default function QuizPage() {
         {phase === 'wrong' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <span style={{ fontSize: 22, fontWeight: 800, textAlign: 'center', letterSpacing: -0.5, color: '#DC2626' }}>틀렸어요</span>
+            <div style={{ alignSelf: 'center' }}>
+              <StreakBar streak={streak} />
+            </div>
             {renderAnswerDetail()}
           </div>
         )}
